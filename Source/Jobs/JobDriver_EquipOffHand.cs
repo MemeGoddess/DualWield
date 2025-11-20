@@ -17,7 +17,8 @@ namespace DualWield.Jobs
             Job job = this.job;
             return pawn.Reserve(targetA, job, 1, -1, null, errorOnFailed);
         }
-        public override IEnumerable<Toil> MakeNewToils()
+
+        protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDestroyedOrNull(TargetIndex.A);
             this.FailOnBurningImmobile(TargetIndex.A);

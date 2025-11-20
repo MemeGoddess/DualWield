@@ -77,7 +77,8 @@ namespace DualWield.Stances
                 this.stanceTracker.pawn.GetStancesOffHand().SetStance(new Stance_Mobile());
             }
         }
-        public override void Expire()
+
+        protected override void Expire()
         {
             this.verb.WarmupComplete();
             if (this.stanceTracker.curStance == this)

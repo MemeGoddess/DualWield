@@ -16,7 +16,7 @@ namespace DualWield
     {
         public static Base Instance { get; private set; }
         ExtendedDataStorage _extendedDataStorage;
-        public override string ModIdentifier => "DualWield";
+        public override string ModIdentifier => "Roolo.DualWield";
 
         internal static SettingHandle<bool> settingsGroup_Drawing;
         internal static SettingHandle<bool> settingsGroup_DualWield;
@@ -289,7 +289,7 @@ namespace DualWield
         {
             List<ThingDef> allWeapons = new List<ThingDef>();
 
-            Predicate<ThingDef> isWeapon = (ThingDef td) => td.equipmentType == EquipmentType.Primary && !td.weaponTags.NullOrEmpty<string>() && !td.destroyOnDrop;
+            Predicate<ThingDef> isWeapon = (ThingDef td) => td.equipmentType == EquipmentType.Primary && !td.destroyOnDrop;
             foreach (ThingDef thingDef in from td in DefDatabase<ThingDef>.AllDefs
                                           where isWeapon(td)
                                           select td)
@@ -301,7 +301,7 @@ namespace DualWield
 
         public override void MapComponentsInitializing(Map map)
         {
-            _extendedDataStorage = UtilityWorldObjectManager.GetUtilityWorldObject<ExtendedDataStorage>();
+            _extendedDataStorage = Find.World.GetComponent<ExtendedDataStorage>();
             base.MapComponentsInitializing(map);
         }
         public override void WorldLoaded()
@@ -309,7 +309,7 @@ namespace DualWield
             //Failsafe if other mods prevent the store from being loaded during MapComponentsInitializing
             if (_extendedDataStorage == null)
             {
-                _extendedDataStorage = UtilityWorldObjectManager.GetUtilityWorldObject<ExtendedDataStorage>();
+                _extendedDataStorage = Find.World.GetComponent<ExtendedDataStorage>();
             }
             base.WorldLoaded();
         }

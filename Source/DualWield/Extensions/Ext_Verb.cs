@@ -1,5 +1,5 @@
 ﻿using DualWield.Stances;
-using Harmony;
+using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,6 @@ namespace DualWield
         {
             if (instance.caster == null)
             {
-                Log.Error("Verb " + instance.GetUniqueLoadID() + " needs caster to work (possibly lost during saving/loading).", false);
                 return false;
             }
             if (!instance.caster.Spawned)

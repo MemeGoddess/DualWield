@@ -7,7 +7,7 @@ using UnityEngine;
 using Verse;
 using Verse.Sound;
 using HugsLib.Settings;
-using Harmony;
+using HarmonyLib;
 
 namespace DualWield.Settings
 {
@@ -64,6 +64,9 @@ namespace DualWield.Settings
 
         private static bool DrawTileForThingDef(ThingDef thingDef, KeyValuePair<String, Record> kv, Rect contentRect, Vector2 iconOffset, int buttonID, bool disabled, string disabledReason = "")
         {
+            if(thingDef == null) {
+                return false;
+            }
             var iconRect = new Rect(contentRect.x + iconOffset.x, contentRect.y + iconOffset.y, IconSize, IconSize);
             MouseoverSounds.DoRegion(iconRect, SoundDefOf.Mouseover_Command);
             Color save = GUI.color;
@@ -106,7 +109,7 @@ namespace DualWield.Settings
             }
             else
             {
-                resolvedIcon = new Texture();
+                resolvedIcon = new Texture2D(0,0);
             }
             GUI.color = color;
             GUI.DrawTexture(iconRect, resolvedIcon);

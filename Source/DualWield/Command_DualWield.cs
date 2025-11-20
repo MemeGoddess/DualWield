@@ -26,10 +26,9 @@ namespace DualWield
         {
             return base.GetWidth(maxWidth);
         }
-
-        public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
+        public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
-            GizmoResult res = base.GizmoOnGUI(topLeft, maxWidth);
+            GizmoResult res = base.GizmoOnGUI(topLeft, maxWidth, parms);
             GUI.color = offHandThing.DrawColor;
             Material material = (!this.disabled) ? null : TexUI.GrayscaleGUI;
             Texture2D tex = offHandThing.def.uiIcon;
@@ -56,12 +55,12 @@ namespace DualWield
                 return;
             }
             Targeter targeter = Find.Targeter;
-            if (this.offHandVerb.CasterIsPawn && targeter.targetingVerb != null && targeter.targetingVerb.verbProps == this.offHandVerb.verbProps)
+            if (this.offHandVerb.CasterIsPawn && targeter.targetingSource != null && targeter.targetingSource.GetVerb.verbProps == this.offHandVerb.verbProps)
             {
                 Pawn casterPawn = this.offHandVerb.CasterPawn;
                 if (!targeter.IsPawnTargeting(casterPawn))
                 {
-                    targeter.targetingVerbAdditionalPawns.Add(casterPawn);
+                    targeter.targetingSourceAdditionalPawns.Add(casterPawn);
                 }
             }
             else

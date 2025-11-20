@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -53,11 +53,11 @@ namespace DualWield.Harmony
             string labelShort = equipment.LabelShort;
             FloatMenuOption menuItem;
 
-            if (equipment.def.IsWeapon && pawn.story.WorkTagIsDisabled(WorkTags.Violent))
+            if (equipment.def.IsWeapon && pawn.story.DisabledWorkTagsBackstoryAndTraits.HasFlag(WorkTags.Violent))
             {
                 menuItem = new FloatMenuOption("CannotEquip".Translate(labelShort) + " " + "DW_AsOffHand".Translate() + " (" + "IsIncapableOfViolenceLower".Translate(pawn.LabelShort, pawn) + ")", null, MenuOptionPriority.Default, null, null, 0f, null, null);
             }
-            else if (!pawn.CanReach(equipment, PathEndMode.ClosestTouch, Danger.Deadly, false, TraverseMode.ByPawn))
+            else if (!pawn.CanReach(equipment, PathEndMode.ClosestTouch, Danger.Deadly, false,  false, TraverseMode.ByPawn))
             {
                 menuItem = new FloatMenuOption("CannotEquip".Translate(labelShort) + " " + "DW_AsOffHand".Translate() + " (" + "NoPath".Translate() + ")", null, MenuOptionPriority.Default, null, null, 0f, null, null);
             }
@@ -96,7 +96,7 @@ namespace DualWield.Harmony
                 {
                     equipment.SetForbidden(false, true);
                     pawn.jobs.TryTakeOrderedJob(new Job(DW_DefOff.DW_EquipOffhand, equipment), JobTag.Misc);
-                    MoteMaker.MakeStaticMote(equipment.DrawPos, equipment.Map, ThingDefOf.Mote_FeedbackEquip, 1f);
+                    FleckMaker.Static(equipment.DrawPos, equipment.Map, FleckDefOf.FeedbackEquip, 1f);
                     PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.EquippingWeapons, KnowledgeAmount.Total);
                 }, MenuOptionPriority.High, null, null, 0f, null, null), pawn, equipment, "ReservedBy");
             }

@@ -1,9 +1,10 @@
 ﻿using DualWield.Storage;
-using Harmony;
+using HarmonyLib;
 using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using Verse;
@@ -30,16 +31,15 @@ namespace DualWield.Harmony
             }
         }
         //Make sure offhand weapons are never stored first in the list. 
-        static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps newEq)
+        static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps newEq, ref ThingOwner<ThingWithComps> ___equipment)
         {
             ExtendedDataStorage store = Base.Instance.GetExtendedDataStorage();
             ThingWithComps primary = __instance.Primary;
             if (primary != null && store != null &&  store.TryGetExtendedDataFor(primary, out ExtendedThingWithCompsData twcData) && twcData.isOffHand)
             {
-                ThingOwner<ThingWithComps> equipment = Traverse.Create(__instance).Field("equipment").GetValue<ThingOwner<ThingWithComps>>();
-                if(equipment != null)
+                if(___equipment != null)
                 {
-                    equipment.Remove(primary);
+                    ___equipment.Remove(primary);
                     __instance.AddOffHandEquipment(primary);
                 }
             }
@@ -69,10 +69,23 @@ namespace DualWield.Harmony
             {
                 if (eq.def.IsTwoHand() && offHandEquipped)
                 {
+                    DropOffHand(__instance, eq, offHand);
                     string herHis = __instance.pawn.story.bodyType == BodyTypeDefOf.Male ? "DW_HerHis_Male".Translate() : "DW_HerHis_Female".Translate();
                     Messages.Message("DW_Message_UnequippedOffHand".Translate(new object[] { __instance.pawn.Name.ToStringShort, herHis }), new LookTargets(__instance.pawn), MessageTypeDefOf.CautionInput);
                 }
                 return true;
+            }
+        }
+
+        private static void DropOffHand(Pawn_EquipmentTracker __instance, ThingWithComps eq, ThingWithComps offHand)
+        {
+            if (__instance.TryDropEquipment(offHand, out ThingWithComps resultingEq, __instance.pawn.Position))
+            {
+                resultingEq?.SetForbidden(value: false);
+            }
+            else
+            {
+                Log.Error(__instance.pawn + " couldn't make room for equipment " + eq);
             }
         }
     }

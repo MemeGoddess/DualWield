@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +77,7 @@ namespace DualWield.Stances
                 this.stanceTracker.pawn.GetStancesOffHand().SetStance(new Stance_Mobile());
             }
         }
-        protected override void Expire()
+        public override void Expire()
         {
             this.verb.WarmupComplete();
             if (this.stanceTracker.curStance == this)

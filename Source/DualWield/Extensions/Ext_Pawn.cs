@@ -28,22 +28,29 @@ namespace DualWield
         }
         public static void TryStartOffHandAttack(this Pawn __instance, LocalTargetInfo targ, ref bool __result)
         {
+            Log.Message("try start offhand attack");
             if(__instance.equipment == null || !__instance.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEquip))
             {
+                Log.Message("no offhand equp");
                 return;
             }
-            if (__instance.GetStancesOffHand().curStance is Stance_Warmup_DW || __instance.GetStancesOffHand().curStance is Stance_Cooldown)
+            var offhandStance = __instance.GetStancesOffHand();
+            if (offhandStance.curStance is Stance_Warmup_DW || offhandStance.curStance is Stance_Cooldown)
             {
+                Log.Message($"On cooldown or mobile {offhandStance.curStance}");
                 return;
             }
-            if (__instance.story != null && __instance.story.WorkTagIsDisabled(WorkTags.Violent))
+            if (__instance.story != null && __instance.story.DisabledWorkTagsBackstoryAndTraits.HasFlag(WorkTags.Violent))
             {
+                Log.Message("not violent");
                 return;
             }
             if (__instance.jobs.curDriver.GetType().Name.Contains("Ability"))//Compatbility for Jecstools' abilities.
             {
+                Log.Message("driver contains ability");
                 return;
             }
+            Log.Message("Cur offhand stance: " + __instance.GetStancesOffHand().curStance.GetType().Name);
             bool allowManualCastWeapons = !__instance.IsColonist;
             Verb verb = __instance.TryGetOffhandAttackVerb(targ.Thing, true);
             
@@ -60,11 +67,13 @@ namespace DualWield
             CompEquippable compEquippable = null;
             if (equipment != null && equipment.TryGetOffHandEquipment(out ThingWithComps result) && result != equipment.Primary)
             {
+                Log.Message("returning offhand attack verb");
                 offHandEquip = result;//TODO: replace this temp code.
                 compEquippable = offHandEquip.TryGetComp<CompEquippable>();
             }
             if (compEquippable != null && compEquippable.PrimaryVerb.Available() && (!compEquippable.PrimaryVerb.verbProps.onlyManualCast || (instance.CurJob != null && instance.CurJob.def != JobDefOf.Wait_Combat) || allowManualCastWeapons))
             {
+                Log.Message("returning primary verb");
                 return compEquippable.PrimaryVerb;
             }
             else

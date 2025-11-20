@@ -1,5 +1,5 @@
 ﻿using DualWield.Stances;
-using Harmony;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +36,7 @@ namespace DualWield.Harmony
         {
             //Make sure this is called when run and gun patches the same line of code as we do in the harmony Patch Verb_TryCastNextBurstShot. 
             //SetStanceOffHand(stanceTracker, stance);
+            Log.Message("patching run and gun");
             Verb_TryCastNextBurstShot.SetStanceOffHand(stanceTracker, stance);
         }
 

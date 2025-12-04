@@ -35,6 +35,9 @@ namespace DualWield.Storage
             Scribe_Values.Look(ref lastEmergencySignalTick, "lastEmergencySignalTick");
             Scribe_Values.Look(ref lastEmergencySignalDelay, "lastEmergencySignalDelay");
             Scribe_Values.Look(ref lastEmergencySignalDelay, "lastEmergencySignalCooldown");
+
+            if(_store == null)
+                _store = new Dictionary<int, IExposable>();
         }
 
         // Return the associate extended data for a given Pawn, creating a new association

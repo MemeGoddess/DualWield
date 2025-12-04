@@ -59,7 +59,7 @@ namespace DualWield
                 }
                 else
                 {
-                    Log.Error(instance.pawn + " couldn't make room for equipment " + eq, false);
+                    Log.Error(instance.pawn + " couldn't make room for equipment " + eq);
                 }
             }
         }

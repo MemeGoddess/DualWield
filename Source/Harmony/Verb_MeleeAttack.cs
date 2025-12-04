@@ -17,7 +17,7 @@ namespace DualWield.Harmony
             var instructionsList = new List<CodeInstruction>(instructions);
             foreach (CodeInstruction instruction in instructionsList)
             {
-                if (instruction.operand == typeof(Pawn_StanceTracker).GetMethod("get_FullBodyBusy"))
+                if (instruction.OperandIs(typeof(Pawn_StanceTracker).GetMethod("get_FullBodyBusy")))
                 {
                     yield return new CodeInstruction(OpCodes.Ldarg_0);
                     yield return new CodeInstruction(OpCodes.Call, typeof(Verb_MeleeAttack_TryCastShot).GetMethod("CurrentHandBusy"));

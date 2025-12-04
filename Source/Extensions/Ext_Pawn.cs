@@ -108,9 +108,9 @@ namespace DualWield
                     {
                         for (int k = 0; k < allVerbs.Count; k++)
                         {
-                            if (allVerbs[k].IsStillUsableBy(instance))
+                            if (allVerbs[k].IsMeleeAttack && allVerbs[k].IsStillUsableBy(instance))
                             {
-                                usableVerbs.Add(new VerbEntry(allVerbs[k], instance));
+                                usableVerbs.Add(new VerbEntry(allVerbs[k], instance, allVerbs, allVerbs.Count));
                             }
                         }
                     }

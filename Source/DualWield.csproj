@@ -15,8 +15,8 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\1.5\Assemblies</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -34,9 +34,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Krafs.Rimworld.Ref" Version="1.4.3530" GeneratePathProperty="true" />
-    <PackageReference Include="Lib.Harmony">
+    <PackageReference Include="Krafs.Rimworld.Ref" Version="1.5.4409" GeneratePathProperty="true" />
+    <PackageReference Include="Lib.Harmony" ExcludeAssets="runtime">
       <Version>2.2.2</Version>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="UnlimitedHugs.Rimworld.HugsLib">
       <Version>10.0.1</Version>

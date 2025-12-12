@@ -18,7 +18,7 @@ namespace DualWield.Harmony
         {
             if (___pawn.Spawned && !___pawn.Dead)
             {
-                ___pawn.GetStancesOffHand().StanceTrackerDraw();
+                ___pawn.GetStancesOffHand()?.StanceTrackerDraw();
             }
         }
 

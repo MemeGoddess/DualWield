@@ -55,7 +55,7 @@ namespace DualWield.Harmony
             return result;
         }
     }
-    [HarmonyPatch(typeof(Pawn_EquipmentTracker) ,"MakeRoomFor")]
+    [HarmonyPatch(typeof(Pawn_EquipmentTracker) ,"MakeRoomFor", typeof(ThingWithComps))]
     class Pawn_EquipmentTracker_MakeRoomFor
     {
         static bool Prefix(Pawn_EquipmentTracker __instance, ThingWithComps eq)

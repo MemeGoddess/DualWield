@@ -12,17 +12,17 @@ namespace DualWield.Stances
     {
         public override bool StanceBusy
         {
-            get
-            {
-                return true;
-            }
+            get { return true; }
         }
+
         public Stance_Warmup_DW()
         {
         }
+
         public Stance_Warmup_DW(int ticks, LocalTargetInfo focusTarg, Verb verb) : base(ticks, focusTarg, verb)
         {
         }
+
         public override void StanceDraw()
         {
             if (Find.Selector.IsSelected(this.stanceTracker.pawn))
@@ -41,13 +41,14 @@ namespace DualWield.Stances
                         facing = (target.Cell - shooter.Position).AngleFlat;
                     }
                 }
+
                 float zOffSet = 0f;
                 float xOffset = 0f;
-                if(shooter.Rotation == Rot4.East)
+                if (shooter.Rotation == Rot4.East)
                 {
                     zOffSet = 0.1f;
                 }
-                else if(shooter.Rotation == Rot4.West)
+                else if (shooter.Rotation == Rot4.West)
                 {
                     zOffSet = -0.1f;
                 }
@@ -59,20 +60,24 @@ namespace DualWield.Stances
                 {
                     xOffset = -0.1f;
                 }
-                GenDraw.DrawAimPieRaw(shooter.DrawPos + new Vector3(xOffset, 0.2f, zOffSet), facing, (int)((float)this.ticksLeft * this.pieSizeFactor));
+
+                GenDraw.DrawAimPieRaw(shooter.DrawPos + new Vector3(xOffset, 0.2f, zOffSet), facing,
+                    (int)((float)this.ticksLeft * this.pieSizeFactor));
             }
         }
+
         public override void StanceTick()
         {
             base.StanceTick();
             //if (Pawn.pather.MovingNow)
             //Using reflection here for Run and Gun Compatibility. 
             bool runAndGunEnabled = false;
-            if(Pawn.AllComps.FirstOrDefault((ThingComp tc) => tc.GetType().Name == "CompRunAndGun") is ThingComp comp)
+            if (Pawn.AllComps.FirstOrDefault((ThingComp tc) => tc.GetType().Name == "CompRunAndGun") is ThingComp comp)
             {
                 runAndGunEnabled = Traverse.Create(comp).Field("isEnabled").GetValue<bool>();
             }
-            if(!runAndGunEnabled && Pawn.pather.MovingNow)
+
+            if (!runAndGunEnabled && Pawn.pather.MovingNow)
             {
                 this.stanceTracker.pawn.GetStancesOffHand().SetStance(new Stance_Mobile());
             }

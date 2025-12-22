@@ -14,13 +14,9 @@ namespace DualWield.Harmony
         static void Postfix(Pawn_StanceTracker __instance, ref bool __result)
         {
             if (__result)
-            {
                 return;
-            }
-            else
-            {
-                __result = FullBodyBusyOrOffHandCooldown(__instance);
-            }
+
+            __result = FullBodyBusyOrOffHandCooldown(__instance);
         }
         public static bool FullBodyBusyOrOffHandCooldown(Pawn_StanceTracker instance)
         {

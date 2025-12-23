@@ -12,14 +12,13 @@ using Verse;
 
 namespace DualWield
 {
-    public class Base : Mod
+    public class DualWield : Mod
     {
-        public static Base Instance { get; private set; }
+        public static DualWield Instance { get; private set; }
         public static DWSettings Settings { get; private set; }
         ExtendedDataStorage _extendedDataStorage;
 
-
-        public Base(ModContentPack config) : base(config)
+        public DualWield(ModContentPack config) : base(config)
         {
             Instance = this;
             Settings = GetSettings<DWSettings>();
@@ -52,6 +51,6 @@ namespace DualWield
     internal static class ExtendedDataStorageLoader
     {
         [HarmonyPostfix]
-        private static void LoadComp(World __instance, bool loadFrom) => Base.Instance.RefreshExtendedDataStorage();
+        private static void LoadComp(World __instance, bool loadFrom) => DualWield.Instance.RefreshExtendedDataStorage();
     }
 }

@@ -33,7 +33,7 @@ namespace DualWield.Harmony
         //Make sure offhand weapons are never stored first in the list. 
         static void Postfix(Pawn_EquipmentTracker __instance, ThingWithComps newEq, ref ThingOwner<ThingWithComps> ___equipment)
         {
-            ExtendedDataStorage store = Base.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
             ThingWithComps primary = __instance.Primary;
             if (primary != null && store != null &&  store.TryGetExtendedDataFor(primary, out ExtendedThingWithCompsData twcData) && twcData.isOffHand)
             {

@@ -39,7 +39,7 @@ namespace DualWield.Harmony
                 xOffset = -0.1f;
             }
 
-            ExtendedThingWithCompsData twcData = Base.Instance.GetExtendedDataStorage().GetExtendedDataFor(twc);
+            ExtendedThingWithCompsData twcData = DualWield.Instance.GetExtendedDataStorage().GetExtendedDataFor(twc);
             if (twcData.isOffHand)
             {
                 origin += new Vector3(xOffset, 0, zOffset);

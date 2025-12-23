@@ -52,7 +52,7 @@ namespace DualWield.Harmony
             CompEquippable compEquippable = null;
 
 
-            if (stance.verb.EquipmentSource != null && Base.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
+            if (stance.verb.EquipmentSource != null && DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
             {
                 offHandEquip = stance.verb.EquipmentSource;
                 compEquippable = offHandEquip.TryGetComp<CompEquippable>();

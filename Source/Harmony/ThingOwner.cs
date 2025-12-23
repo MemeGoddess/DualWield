@@ -13,7 +13,7 @@ namespace DualWield.Harmony
     {
         static void Postfix(Thing item)
         {
-            ExtendedDataStorage store = Base.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
             if (store != null && item is ThingWithComps eq && store.TryGetExtendedDataFor(eq, out ExtendedThingWithCompsData result))
             {
                 store.DeleteExtendedDataFor(eq);

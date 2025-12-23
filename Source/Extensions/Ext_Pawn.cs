@@ -13,7 +13,7 @@ namespace DualWield
     {
         public static Pawn_StanceTracker GetStancesOffHand(this Pawn instance)
         {
-            if(Base.Instance.GetExtendedDataStorage() is ExtendedDataStorage store)
+            if(DualWield.Instance.GetExtendedDataStorage() is ExtendedDataStorage store)
             {
                 return store.GetExtendedDataFor(instance).stancesOffhand;
             }
@@ -21,7 +21,7 @@ namespace DualWield
         }
         public static void SetStancesOffHand(this Pawn instance, Pawn_StanceTracker stancesOffHand)
         {
-            if (Base.Instance.GetExtendedDataStorage() is ExtendedDataStorage store)
+            if (DualWield.Instance.GetExtendedDataStorage() is ExtendedDataStorage store)
             {
                 store.GetExtendedDataFor(instance).stancesOffhand = stancesOffHand;
             }

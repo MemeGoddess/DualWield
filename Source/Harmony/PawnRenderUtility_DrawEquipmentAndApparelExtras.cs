@@ -175,8 +175,8 @@ namespace DualWield.Harmony
         {
             bool offHandIsMelee = IsMeleeWeapon(offHandEquip);
             bool mainHandIsMelee = IsMeleeWeapon(pawn.equipment.Primary);
-            float meleeAngleFlipped = Base.meleeMirrored ? 360 - Base.meleeAngle : Base.meleeAngle;
-            float rangedAngleFlipped = Base.rangedMirrored ? 360 - Base.rangedAngle : Base.rangedAngle;
+            float meleeAngleFlipped = Base.Settings.meleeMirrored ? 360 - Base.Settings.meleeAngle : Base.Settings.meleeAngle;
+            float rangedAngleFlipped = Base.Settings.rangedMirrored ? 360 - Base.Settings.rangedAngle : Base.Settings.rangedAngle;
 
             if (pawn.Rotation == Rot4.East)
             {
@@ -193,11 +193,11 @@ namespace DualWield.Harmony
             {
                 if (!mainHandAiming && !offHandAiming)
                 {
-                    offsetMainHand.x = mainHandIsMelee ? Base.meleeXOffset : Base.rangedXOffset;
-                    offsetOffHand.x = offHandIsMelee ? -Base.meleeXOffset : -Base.rangedXOffset;
-                    offsetMainHand.z = mainHandIsMelee ? Base.meleeZOffset : Base.rangedZOffset;
-                    offsetOffHand.z = offHandIsMelee ? -Base.meleeZOffset : -Base.rangedZOffset;
-                    offHandAngle = offHandIsMelee ? Base.meleeAngle : Base.rangedAngle;
+                    offsetMainHand.x = mainHandIsMelee ? Base.Settings.meleeXOffset : Base.Settings.rangedXOffset;
+                    offsetOffHand.x = offHandIsMelee ? -Base.Settings.meleeXOffset : -Base.Settings.rangedXOffset;
+                    offsetMainHand.z = mainHandIsMelee ? Base.Settings.meleeZOffset : Base.Settings.rangedZOffset;
+                    offsetOffHand.z = offHandIsMelee ? -Base.Settings.meleeZOffset : -Base.Settings.rangedZOffset;
+                    offHandAngle = offHandIsMelee ? Base.Settings.meleeAngle : Base.Settings.rangedAngle;
                     mainHandAngle = mainHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
 
                 }
@@ -211,12 +211,12 @@ namespace DualWield.Harmony
                 if (!mainHandAiming && !offHandAiming)
                 {
                     offsetMainHand.y = 1f;
-                    offsetMainHand.x = mainHandIsMelee ? -Base.meleeXOffset : -Base.rangedXOffset;
-                    offsetOffHand.x = offHandIsMelee ? Base.meleeXOffset : Base.rangedXOffset;
-                    offsetMainHand.z = mainHandIsMelee ? -Base.meleeZOffset : -Base.rangedZOffset;
-                    offsetOffHand.z = offHandIsMelee ? Base.meleeZOffset : Base.rangedZOffset;
+                    offsetMainHand.x = mainHandIsMelee ? -Base.Settings.meleeXOffset : -Base.Settings.rangedXOffset;
+                    offsetOffHand.x = offHandIsMelee ? Base.Settings.meleeXOffset : Base.Settings.rangedXOffset;
+                    offsetMainHand.z = mainHandIsMelee ? -Base.Settings.meleeZOffset : -Base.Settings.rangedZOffset;
+                    offsetOffHand.z = offHandIsMelee ? Base.Settings.meleeZOffset : Base.Settings.rangedZOffset;
                     offHandAngle = offHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
-                    mainHandAngle = mainHandIsMelee ? Base.meleeAngle : Base.rangedAngle;
+                    mainHandAngle = mainHandIsMelee ? Base.Settings.meleeAngle : Base.Settings.rangedAngle;
                 }
                 else
                 {
@@ -225,12 +225,12 @@ namespace DualWield.Harmony
             }
             if (!pawn.Rotation.IsHorizontal)
             {
-                if (Base.customRotations.Value.inner.TryGetValue((offHandEquip.def.defName), out Record offHandValue))
+                if (Base.Settings.customRotations.TryGetValue((offHandEquip.def.defName), out Record offHandValue))
                 {
                     offHandAngle += pawn.Rotation == Rot4.North ? offHandValue.extraRotation : -offHandValue.extraRotation;
                     //offHandAngle %= 360;
                 }
-                if (Base.customRotations.Value.inner.TryGetValue((eq.def.defName), out Record mainHandValue))
+                if (Base.Settings.customRotations.TryGetValue((eq.def.defName), out Record mainHandValue))
                 {
                     mainHandAngle += pawn.Rotation == Rot4.North ? -mainHandValue.extraRotation : mainHandValue.extraRotation;
                     //mainHandAngle %= 360;

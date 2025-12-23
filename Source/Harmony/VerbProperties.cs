@@ -23,11 +23,11 @@ namespace DualWield.Harmony
                 }
                 if (equipment != null && equipment is ThingWithComps twc && twc.IsOffHand())
                 {
-                    __result = CalcCooldownPenalty(__result, skillRecord, Base.staticCooldownPOffHand/100f);
+                    __result = CalcCooldownPenalty(__result, skillRecord, Base.Settings.staticCooldownPOffHand/100f);
                 }
                 else if (attacker.equipment != null && attacker.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEq))
                 {
-                    __result = CalcCooldownPenalty(__result, skillRecord, Base.staticCooldownPMainHand/100f);
+                    __result = CalcCooldownPenalty(__result, skillRecord, Base.Settings.staticCooldownPMainHand/100f);
                 }
             }
 
@@ -37,7 +37,7 @@ namespace DualWield.Harmony
         private static float CalcCooldownPenalty(float __result, SkillRecord skillRecord, float staticPenalty)
         {
             //TODO: make mod settings
-            float perLevelPenalty = Base.dynamicCooldownP/100f;
+            float perLevelPenalty = Base.Settings.dynamicCooldownP/100f;
             int levelsShort = 20 - skillRecord.levelInt;
             float dynamicPenalty = perLevelPenalty * levelsShort;
             __result *= 1.0f + staticPenalty + dynamicPenalty;
@@ -59,11 +59,11 @@ namespace DualWield.Harmony
                 SkillRecord skillRecord = __instance.IsMeleeAttack ? pawn.skills.GetSkill(SkillDefOf.Melee) : pawn.skills.GetSkill(SkillDefOf.Shooting);
                 if (equipment is ThingWithComps twc && twc.IsOffHand())
                 {
-                    __result = CalcAccuracyPenalty(__result, skillRecord, Base.staticAccPOffHand/100f);
+                    __result = CalcAccuracyPenalty(__result, skillRecord, Base.Settings.staticAccPOffHand/100f);
                 }
                 else if (pawn.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEq))
                 {
-                    __result = CalcAccuracyPenalty(__result, skillRecord, Base.staticAccPMainHand/100f);
+                    __result = CalcAccuracyPenalty(__result, skillRecord, Base.Settings.staticAccPMainHand/100f);
                 }
             }
         }
@@ -71,7 +71,7 @@ namespace DualWield.Harmony
         private static float CalcAccuracyPenalty(float __result, SkillRecord skillRecord, float staticPenalty)
         {
             //TODO: make mod settings
-            float perLevelPenalty = Base.dynamicAccP/100f;
+            float perLevelPenalty = Base.Settings.dynamicAccP/100f;
             int levelsShort = 20 - skillRecord.levelInt;
             float dynamicPenalty = perLevelPenalty * levelsShort;
             __result *= 1.0f - staticPenalty - dynamicPenalty;

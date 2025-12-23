@@ -6,7 +6,6 @@ using System.Text;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
-using HugsLib.Settings;
 using HarmonyLib;
 
 namespace DualWield.Settings
@@ -161,174 +160,47 @@ namespace DualWield.Settings
             return (x * sin + y * cos);
         }
 
-        public static bool CustomDrawer_Note(Rect rect, SettingHandle<string> setting)
-        {
-            Rect textRect = new Rect(rect);
-            float neededHeight = (Mathf.Floor((float) setting.Value.Count() / 85f) + 1) * 14f;
-            textRect.x -= textRect.width;
-            textRect.width *= 2;
-            textRect.height = neededHeight;
-            Widgets.TextArea(textRect, setting.Value, true);
-            setting.CustomDrawerHeight = neededHeight;
-            return false;
-        }
-
-        public static bool CustomDrawer_Button(Rect rect, SettingHandle<bool> setting, String activateText, String deactivateText, int xOffset = 0, int yOffset = 0)
-        {
-            int labelWidth = (int)rect.width - 20;
-            int horizontalOffset = 0;
-            int verticalOffset = 0;
-            bool change = false;
-            Rect buttonRect = new Rect(rect);
-            buttonRect.width = labelWidth;
-            buttonRect.position = new Vector2(buttonRect.position.x + horizontalOffset + xOffset, buttonRect.position.y + verticalOffset + yOffset);
-            Color activeColor = GUI.color;
-            bool isSelected = setting.Value;
-            String text = setting ? deactivateText : activateText;
-
-            if (isSelected)
-                GUI.color = SelectedColor;
-            bool clicked = Widgets.ButtonText(buttonRect, text);
-            if (isSelected)
-                GUI.color = activeColor;
-
-            if (clicked)
-            {
-                setting.Value = !setting.Value;
-                change = true;
-            }
-            return change;
-        }
-
-        public static bool CustomDrawer_Tabs(Rect rect, SettingHandle<String> setting, String[] defaultValues, bool vertical = false, int xOffset = 0, int yOffset = 0)
-        {
-            int labelWidth = (int)rect.width - 20;
-
-            int horizontalOffset = 0;
-            int verticalOffset = 0;
-
-            bool change = false;
-
-            foreach (String tab in defaultValues)
-            {
-
-                Rect buttonRect = new Rect(rect);
-                buttonRect.width = labelWidth;
-                buttonRect.position = new Vector2(buttonRect.position.x + horizontalOffset + xOffset, buttonRect.position.y + verticalOffset + yOffset);
-                Color activeColor = GUI.color;
-                bool isSelected = tab == setting.Value;
-                if (isSelected)
-                    GUI.color = SelectedColor;
-                bool clicked = Widgets.ButtonText(buttonRect, tab);
-                if (isSelected)
-                    GUI.color = activeColor;
-
-
-                if (clicked)
-                {
-                    if (setting.Value != tab)
-                    {
-                        setting.Value = tab;
-                    }
-                    //else
-                    //{
-                    //    setting.Value = "none";
-                    //}
-                    change = true;
-                }
-
-                if (vertical)
-                {
-                    verticalOffset += (int)buttonRect.height;
-                }
-                else
-                {
-                    horizontalOffset += labelWidth;
-                }
-
-            }
-            if (vertical)
-            {
-                //setting.CustomDrawerHeight = verticalOffset;
-            }
-            return change;
-        }
-
-
-        public static bool CustomDrawer_Filter(Rect rect, SettingHandle<float> slider, bool def_isPercentage, float def_min, float def_max, Color background)
-        {
-            DrawBackground(rect, background);
-            int labelWidth = 50;
-
-            Rect sliderPortion = new Rect(rect);
-            sliderPortion.width = sliderPortion.width - labelWidth;
-
-            Rect labelPortion = new Rect(rect);
-            labelPortion.width = labelWidth;
-            labelPortion.position = new Vector2(sliderPortion.position.x + sliderPortion.width + 5f, sliderPortion.position.y + 4f);
-
-            sliderPortion = sliderPortion.ContractedBy(2f);
-
-            if (def_isPercentage)
-                Widgets.Label(labelPortion, (Mathf.Round(slider.Value * 100f)).ToString("F0") + "%");
-            else
-                Widgets.Label(labelPortion, slider.Value.ToString("F2"));
-
-            float val = Widgets.HorizontalSlider(sliderPortion, slider.Value, def_min, def_max, true);
-            bool change = false;
-
-            if (slider.Value != val)
-                change = true;
-
-            slider.Value = val;
-            return change;
-        }
-
-
-        public static bool CustomDrawer_MatchingThingDefs_active(Rect wholeRect, SettingHandle<DictRecordHandler> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "", string noText = "", Dictionary<string, Record> disabledThingDefs = null,string disabledReason = "")
+        public static float CustomDrawer_MatchingThingDefs_active(Rect wholeRect, Dictionary<string, Record> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "", string noText = "", Dictionary<string, Record> disabledThingDefs = null,string disabledReason = "")
         {
             //TODO: refactor this mess, remove redundant and quircky things.
-            if (setting.Value == null)
+            if (setting == null)
             {
-                setting.Value = new DictRecordHandler();
+                setting = new Dictionary<string, Record>();
                 foreach (KeyValuePair<string, Record> kv in defaults)
                 {
-                    setting.Value.InnerList.Add(kv.Key, kv.Value);
+                    setting.Add(kv.Key, kv.Value);
                 }
-                //setting.Value = Base.GetDefaultForFactionRestrictions(new Dict2DRecordHandler(), allPawns, allFactionNames);
             }
-            //CustomDrawer_Tabs(new Rect(wholeRect.x, wholeRect.y, (float)wholeRect.width, buttonHeight), filter, allFactionNames.ToArray(), true, (int)-wholeRect.width, 0);
-            DrawBackground(wholeRect, background);
-
-
-            GUI.color = Color.white;
-
+            int iconsPerRow = (int)((wholeRect.width / 2) / (IconGap + IconSize));
+            var highestIndex = setting.GroupBy(x => x.Value.isSelected).Max(y => y.Count());
+            var rows = (int)Math.Ceiling(highestIndex / (float)iconsPerRow);
+            var maxHeight = (rows * IconSize) + (rows * IconGap) + TextMargin + BottomMargin;
             Rect leftRect = new Rect(wholeRect);
-            leftRect.width = leftRect.width / 2;
-            leftRect.height = wholeRect.height - TextMargin + BottomMargin;
+            leftRect.width /= 2;
+            leftRect.height = maxHeight;
             leftRect.position = new Vector2(leftRect.position.x, leftRect.position.y);
             Rect rightRect = new Rect(wholeRect);
             rightRect.width = rightRect.width / 2;
-            leftRect.height = wholeRect.height - TextMargin + BottomMargin;
+            leftRect.height = maxHeight;
             rightRect.position = new Vector2(rightRect.position.x + leftRect.width, rightRect.position.y);
+            DrawBackground(new Rect(wholeRect.x, wholeRect.y, wholeRect.width, Math.Max(leftRect.height, rightRect.height)), background);
+
+
+            GUI.color = Color.white;
 
             DrawLabel(yesText, leftRect, TextMargin);
             DrawLabel(noText, rightRect, TextMargin);
 
             leftRect.position = new Vector2(leftRect.position.x, leftRect.position.y + TextMargin);
             rightRect.position = new Vector2(rightRect.position.x, rightRect.position.y + TextMargin);
-            int iconsPerRow = (int)(leftRect.width / (IconGap + IconSize));
 
             bool change = false;
-            //bool factionFound = setting.Value.InnerList.TryGetValue(filter.Value, out Dictionary<string, Record> selection);
-            //FilterSelection(ref selection, allPawns, filter.Value);
             int indexLeft = 0;
             int indexRight = 0;
-            foreach (KeyValuePair<String, Record> item in setting.Value.InnerList)
+            foreach (KeyValuePair<String, Record> item in setting)
             {
                 Rect rect = item.Value.isSelected ? leftRect : rightRect;
                 int index = item.Value.isSelected ? indexLeft : indexRight;
-                //float tileHeight = item.Value.label.Count() > 16 ? 2 * rowHeight : rowHeight;
                 leftRect.height = IconSize;
                 rightRect.height = IconSize;
 
@@ -356,55 +228,45 @@ namespace DualWield.Settings
                     item.Value.isSelected = !item.Value.isSelected;
                 }
             }
-            int biggerRows = Math.Max(indexLeft / iconsPerRow, (setting.Value.InnerList.Count - indexLeft) / iconsPerRow) + 1;
-            setting.CustomDrawerHeight = (biggerRows * IconSize) + (biggerRows * IconGap) + TextMargin;
-            //setting.CustomDrawerHeight = Math.Max(leftHeight, rightHeight) + TextMargin;
-
-            if (change)
-            {
-                //setting.Value.InnerList[filter.Value] = selection;
-                //setting.Value.InnerList = selection;
-            }
-            return change;
+            return maxHeight;
         }
 
-        public static bool CustomDrawer_MatchingThingDefs_dialog(Rect wholeRect, SettingHandle<DictRecordHandler> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "")
+        public static float CustomDrawer_MatchingThingDefs_dialog(Rect wholeRect, Dictionary<string, Record> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "")
         {
             //TODO: refactor this mess, remove redundant and quircky things.
 
             float rowHeight = 20f;
-            if (setting.Value == null)
+            if (setting == null)
             {
-                setting.Value = new DictRecordHandler();
+                setting = new Dictionary<string, Record>();
                 foreach (KeyValuePair<string, Record> kv in defaults)
                 {
-                    setting.Value.InnerList.Add(kv.Key, kv.Value);
+                    setting.Add(kv.Key, kv.Value);
                 }
-                //setting.Value = Base.GetDefaultForFactionRestrictions(new Dict2DRecordHandler(), allPawns, allFactionNames);
             }
-            DrawBackground(wholeRect, background);
-
-
-            GUI.color = Color.white;
-
             Rect rect = new Rect(wholeRect);
             rect.width = rect.width;
             rect.height = wholeRect.height - TextMargin + BottomMargin;
             rect.position = new Vector2(rect.position.x, rect.position.y);
+            int iconsPerRow = (int)(rect.width / (IconGap + IconSize));
+            var wastedWidth = rect.width - (iconsPerRow * (IconGap + IconSize));
+            rect = new Rect(rect.x, rect.y, rect.width - wastedWidth, rect.height);
+            var rowEstimate = (int)Math.Ceiling(setting.Count / (float)iconsPerRow);
+            var backgroundHeight = (rowEstimate * IconSize) + (rowEstimate * IconGap) + TextMargin;
+
+            DrawBackground(new Rect(rect.position, new Vector2(rect.width, backgroundHeight)), background);
+
+
+            GUI.color = Color.white;
 
             DrawLabel(yesText, rect, TextMargin);
 
             rect.position = new Vector2(rect.position.x, rect.position.y + TextMargin);
-            int iconsPerRow = (int)(rect.width / (IconGap + IconSize));
 
             bool change = false;
-            //bool factionFound = setting.Value.InnerList.TryGetValue(filter.Value, out Dictionary<string, Record> selection);
-            //FilterSelection(ref selection, allPawns, filter.Value);
             int index = 0;
-            foreach (KeyValuePair<String, Record> item in setting.Value.InnerList)
+            foreach (KeyValuePair<String, Record> item in setting)
             {
-
-                //float tileHeight = item.Value.label.Count() > 16 ? 2 * rowHeight : rowHeight;
                 rect.height = IconSize;
                 int column = index % iconsPerRow;
                 int row = index / iconsPerRow;
@@ -424,9 +286,7 @@ namespace DualWield.Settings
                 index++;
             }
             int rows = index/iconsPerRow + 1;
-            setting.CustomDrawerHeight = (rows * IconSize) + (rows * IconGap) + TextMargin;
-            //setting.CustomDrawerHeight = Math.Max(leftHeight, rightHeight) + TextMargin;
-            return change;
+            return (rows * IconSize) + (rows * IconGap) + TextMargin;
         }
         
 

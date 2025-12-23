@@ -12,12 +12,13 @@
 			<li>1.6</li>
 	</supportedVersions>
 	<modDependencies>
-      <li>
-        <packageId>UnlimitedHugs.HugsLib</packageId>
-        <displayName>HugsLib</displayName>
-        <steamWorkshopUrl>https://steamcommunity.com/sharedfiles/filedetails/?id=818773962</steamWorkshopUrl>
-      </li>  
-    </modDependencies>
+		<li>
+			<packageId>brrainz.harmony</packageId>
+			<displayName>Harmony</displayName>
+			<steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+			<downloadUrl>https://github.com/pardeike/HarmonyRimWorld/releases/latest</downloadUrl>
+		</li>
+	</modDependencies>
    <packageId>MemeGoddess.DualWield</packageId>
    
 	<description>Pistols are boring? Not when you dual wield them like Lara Croft! This mod allows your colonists to dual wield any weapon you allow in the mod options, including weapons added by other mods. Dual wielding does come with accuracy and firing rate penalties which are affected by the shooting/melee level of the pawns. 

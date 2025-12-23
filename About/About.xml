@@ -21,9 +21,6 @@
 	</modDependencies>
    <packageId>MemeGoddess.DualWield</packageId>
    
-	<description>Pistols are boring? Not when you dual wield them like Lara Croft! This mod allows your colonists to dual wield any weapon you allow in the mod options, including weapons added by other mods. Dual wielding does come with accuracy and firing rate penalties which are affected by the shooting/melee level of the pawns. 
-	
-&lt;color=orange&gt;&lt;b&gt;Dependencies &lt;/b&gt;&lt;/color&gt;
-This mod depends on Hugslib. Hugslib should be placed above Dual Wield in the load order. 
+	<description>Pistols are boring? Not when you dual wield them like Lara Croft! This mod allows your colonists to dual wield any weapon you allow in the mod options, including weapons added by other mods. Dual wielding does come with accuracy and firing rate penalties which are affected by the shooting/melee level of the pawns.  
 	</description>	
 </ModMetaData>

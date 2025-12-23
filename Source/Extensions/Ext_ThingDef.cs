@@ -10,11 +10,11 @@ namespace DualWield
     {
         public static bool CanBeOffHand(this ThingDef td)
         {
-            return td.IsWeapon && DualWield.Settings.dualWieldSelection != null && DualWield.Settings.dualWieldSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected; 
+            return td.IsWeapon && DualWield.Settings.DualWieldSelection != null && DualWield.Settings.DualWieldSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected; 
         }
         public static bool IsTwoHand(this ThingDef td)
         {
-            return td.IsWeapon && DualWield.Settings.twoHandSelection != null && DualWield.Settings.twoHandSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected;
+            return td.IsWeapon && DualWield.Settings.TwoHandSelection != null && DualWield.Settings.TwoHandSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected;
         }
     }
 }

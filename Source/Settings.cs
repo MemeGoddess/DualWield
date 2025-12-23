@@ -12,66 +12,64 @@ namespace DualWield
 {
     public class DWSettings : ModSettings
     {
-        private Color SelectedColor = new Color(0.5f, 1f, 0.5f, 1f);
+        private Color _selectedColor = new Color(0.5f, 1f, 0.5f, 1f);
 
+        private bool _settingsGroupDrawing = true;
+        private bool _settingsGroupSecondary = true;
+        private bool _settingsGroupTwoHanded = true;
+        private bool _settingsGroupPenalties = true;
 
-        private bool settingsGroup_Drawing = true;
-        private bool settingsGroup_Secondary = true;
-        private bool settingsGroup_TwoHanded = true;
-        private bool settingsGroup_Penalties = true;
+        public float StaticCooldownPOffHand = 20;
+        public float StaticCooldownPMainHand = 10;
+        public float StaticAccPOffHand = 10;
+        public float StaticAccPMainHand = 10;
+        public float DynamicCooldownP = 5;
+        public float DynamicAccP = 0.5f;
 
-        public float staticCooldownPOffHand = 20;
-        public float staticCooldownPMainHand = 10;
-        public float staticAccPOffHand = 10;
-        public float staticAccPMainHand = 10;
-        public float dynamicCooldownP = 5;
-        public float dynamicAccP = 0.5f;
+        public float MeleeAngle = 270;
+        public float RangedAngle = 135f;
+        public float MeleeXOffset = 0.4f;
+        public float RangedXOffset = 0.1f;
+        public float MeleeZOffset = 0f;
+        public float RangedZOffset = 0f;
 
-        public float meleeAngle = 270;
-        public float rangedAngle = 135f;
-        public float meleeXOffset = 0.4f;
-        public float rangedXOffset = 0.1f;
-        public float meleeZOffset = 0f;
-        public float rangedZOffset = 0f;
+        public bool MeleeMirrored = true;
+        public bool RangedMirrored = true;
 
-        public bool meleeMirrored = true;
-        public bool rangedMirrored = true;
+        public float NpcDualWieldChance = 40f;
 
-        public float NPCDualWieldChance = 40f;
+        public Dictionary<string, Record> DualWieldSelection = new Dictionary<string, Record>();
+        public Dictionary<string, Record> TwoHandSelection = new Dictionary<string, Record>();
+        public Dictionary<string, Record> CustomRotations = new Dictionary<string, Record>();
 
-        public Dictionary<string, Record> dualWieldSelection = new Dictionary<string, Record>();
-        public Dictionary<string, Record> twoHandSelection = new Dictionary<string, Record>();
-        public Dictionary<string, Record> customRotations = new Dictionary<string, Record>();
+        private string _meleeAngleBuffer;
+        private string _rangedAngleBuffer;
+        private string _meleeXOffsetBuffer;
+        private string _rangedXOffsetBuffer;
+        private string _meleeZOffsetBuffer;
+        private string _rangedZOffsetBuffer;
 
-        private string meleeAngleBuffer;
-        private string rangedAngleBuffer;
-        private string meleeXOffsetBuffer;
-        private string rangedXOffsetBuffer;
-        private string meleeZOffsetBuffer;
-        private string rangedZOffsetBuffer;
+        private string _staticCooldownPOffHandBuffer;
+        private string _staticCooldownPMainHandBuffer;
+        private string _staticAccPOffHandBuffer;
+        private string _staticAccPMainHandBuffer;
+        private string _dynamicCooldownPBuffer;
+        private string _dynamicAccPBuffer;
+        private string _npcDualWieldChanceBuffer;
 
-        private string staticCooldownPOffHandBuffer;
-        private string staticCooldownPMainHandBuffer;
-        private string staticAccPOffHandBuffer;
-        private string staticAccPMainHandBuffer;
-        private string dynamicCooldownPBuffer;
-        private string dynamicAccPBuffer;
-        private string npcDualWieldChanceBuffer;
+        private List<ThingDef> _allWeapons = new List<ThingDef>();
 
-        private List<ThingDef> allWeapons = new List<ThingDef>();
-
-        private static Vector2 scroll = Vector2.zero;
-        private static float maxHeight = 600;
+        private static Vector2 _scroll = Vector2.zero;
+        private static float _maxHeight = 600;
         public void DoWindowContents(Rect rect)
         {
 
-            if(allWeapons == null || !allWeapons.Any())
-                allWeapons = GetAllWeapons();
+            if(_allWeapons == null || !_allWeapons.Any())
+                _allWeapons = GetAllWeapons();
             
-            var minY = 30;
             var columns = 2;
-            var leftRect = new Rect(rect.x, 0, (rect.width - 16f) / columns, maxHeight);
-            var rightRect = new Rect(leftRect.xMax, 0, (rect.width - 16f) / columns, maxHeight);
+            var leftRect = new Rect(rect.x, 0, (rect.width - 16f) / columns, _maxHeight);
+            var rightRect = new Rect(leftRect.xMax, 0, (rect.width - 16f) / columns, _maxHeight);
 
 
             var header = new Listing_Standard();
@@ -80,78 +78,77 @@ namespace DualWield
             header.End();
 
             var scrollRect = new Rect(new Vector2(rect.x, rect.y + 15f), new Vector2(rect.width, rect.height - 15f));
-            Widgets.BeginScrollView(scrollRect, ref scroll, new Rect(0f, 0f, rect.width - 16f, maxHeight));
-            //GUIDrawUtility.DrawBackground(new Rect(0f, 10f, rect.width - 16f, maxHeight), Color.magenta);
+            Widgets.BeginScrollView(scrollRect, ref _scroll, new Rect(0f, 0f, rect.width - 16f, _maxHeight));
+            _maxHeight = 0;
 
             #region Left
             var left = new Listing_Standard();
             left.Begin(leftRect);
             left.verticalSpacing = 5f;
-            maxHeight = 0;
 
             var leftHeight = 0f;
-            leftHeight += left.Button("DW_SettingsGroup_Drawing_Title".Translate(), ref settingsGroup_Drawing);
+            leftHeight += left.Button("DW_SettingsGroup_Drawing_Title".Translate(), ref _settingsGroupDrawing);
 
-            if (settingsGroup_Drawing)
+            if (_settingsGroupDrawing)
             {
                 leftHeight += left.Label("DW_Setting_Note_Drawing".Translate()).height;
                 leftHeight += left.verticalSpacing;
 
                 leftHeight += left.TextNumeric("DW_Setting_MeleeAngle_Title".Translate(), "DW_Setting_MeleeAngle_Description".Translate(), 
-                    ref meleeAngle, ref meleeAngleBuffer, max: 360f);
+                    ref MeleeAngle, ref _meleeAngleBuffer, max: 360f);
                 leftHeight += left.TextNumeric("DW_Setting_RangedAngle_Title".Translate(), "DW_Setting_RangedAngle_Description".Translate(), 
-                    ref rangedAngle, ref rangedAngleBuffer, max: 360f);
+                    ref RangedAngle, ref _rangedAngleBuffer, max: 360f);
 
                 leftHeight += left.TextNumeric("DW_Setting_MeleeXOffset_Title".Translate(), "DW_Setting_MeleeXOffset_Description".Translate(), 
-                        ref meleeXOffset, ref meleeXOffsetBuffer, -2f, 2f);
+                        ref MeleeXOffset, ref _meleeXOffsetBuffer, -2f, 2f);
                 leftHeight += left.TextNumeric("DW_Setting_RangedXOffset_Title".Translate(), "DW_Setting_RangedXOffset_Description".Translate(),
-                    ref rangedXOffset, ref rangedXOffsetBuffer, -2f, 2f);
+                    ref RangedXOffset, ref _rangedXOffsetBuffer, -2f, 2f);
 
                 leftHeight += left.TextNumeric("DW_Setting_MeleeZOffset_Title".Translate(), "DW_Setting_MeleeZOffset_Description".Translate(),
-                    ref meleeZOffset, ref meleeZOffsetBuffer, -2f, 2f);
+                    ref MeleeZOffset, ref _meleeZOffsetBuffer, -2f, 2f);
                 leftHeight += left.TextNumeric("DW_Setting_RangedZOffset_Title".Translate(), "DW_Setting_RangedZOffset_Description".Translate(),
-                    ref rangedZOffset, ref rangedZOffsetBuffer, -2f, 2f);
+                    ref RangedZOffset, ref _rangedZOffsetBuffer, -2f, 2f);
 
-                left.CheckboxLabeled("DW_Setting_MeleeMirrored_Title".Translate(), ref meleeMirrored, "DW_Setting_MeleeMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
+                left.CheckboxLabeled("DW_Setting_MeleeMirrored_Title".Translate(), ref MeleeMirrored, "DW_Setting_MeleeMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                left.CheckboxLabeled("DW_Setting_RangedMirrored_Title".Translate(), ref rangedMirrored, "DW_Setting_RangedMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
+                left.CheckboxLabeled("DW_Setting_RangedMirrored_Title".Translate(), ref RangedMirrored, "DW_Setting_RangedMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                if (customRotations.Count < allWeapons.Count)
-                    AddMissingWeaponsForRotationSelection(allWeapons);
-                if (customRotations.Count > allWeapons.Count)
+                if (CustomRotations.Count < _allWeapons.Count)
+                    AddMissingWeaponsForRotationSelection(_allWeapons);
+                if (CustomRotations.Count > _allWeapons.Count)
                 {
-                    RemoveDeprecatedRecords(allWeapons, customRotations);
+                    RemoveDeprecatedRecords(_allWeapons, CustomRotations);
                 }
 
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(left.GetRect(1), customRotations,
-                    GetRotationDefaults(allWeapons), allWeapons, "DW_Setting_CustomRotations_Header".Translate());
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(left.GetRect(1), CustomRotations,
+                    GetRotationDefaults(_allWeapons), _allWeapons, "DW_Setting_CustomRotations_Header".Translate());
                 left.Gap(actualHeight + left.verticalSpacing);
                 leftHeight += actualHeight;
                 leftHeight += left.verticalSpacing;
             }
 
-            leftHeight += left.Button("DW_SettingsGroup_Penalties_Title".Translate(), ref settingsGroup_Penalties);
+            leftHeight += left.Button("DW_SettingsGroup_Penalties_Title".Translate(), ref _settingsGroupPenalties);
             
-            if (settingsGroup_Penalties)
+            if (_settingsGroupPenalties)
             {
                 leftHeight += left.TextNumeric("DW_Setting_StaticCooldownPenOffHand_Title".Translate(), "DW_Setting_StaticCooldownPenOffHand_Description".Translate(), 
-                    ref staticCooldownPOffHand, ref staticCooldownPOffHandBuffer, max: 500f);
+                    ref StaticCooldownPOffHand, ref _staticCooldownPOffHandBuffer, max: 500f);
                 leftHeight += left.TextNumeric("DW_Setting_StaticCooldownPMainHand_Title".Translate(), "DW_Setting_StaticCooldownPMainHand_Description".Translate(),
-                    ref staticCooldownPMainHand, ref staticCooldownPMainHandBuffer, max: 500f);
+                    ref StaticCooldownPMainHand, ref _staticCooldownPMainHandBuffer, max: 500f);
 
                 leftHeight += left.TextNumeric("DW_Setting_StaticAccPOffHand_Title".Translate(), "DW_Setting_StaticAccPOffHand_Description".Translate(),
-                    ref staticAccPOffHand, ref staticAccPOffHandBuffer, max: 500f);
+                    ref StaticAccPOffHand, ref _staticAccPOffHandBuffer, max: 500f);
                 leftHeight += left.TextNumeric("DW_Setting_StaticAccPMainHand_Title".Translate(), "DW_Setting_StaticAccPMainHand_Description".Translate(),
-                    ref staticAccPMainHand, ref staticAccPMainHandBuffer, max: 500f);
+                    ref StaticAccPMainHand, ref _staticAccPMainHandBuffer, max: 500f);
 
                 leftHeight += left.TextNumeric("DW_Setting_DynamicCooldownP_Title".Translate(), "DW_Setting_DynamicCooldownP_Description".Translate(),
-                    ref dynamicCooldownP, ref dynamicCooldownPBuffer, max: 100f);
+                    ref DynamicCooldownP, ref _dynamicCooldownPBuffer, max: 100f);
                 leftHeight += left.TextNumeric("DW_Setting_DynamicAccP_Title".Translate(), "DW_Setting_DynamicAccP_Description".Translate(),
-                    ref dynamicAccP, ref dynamicAccPBuffer, max: 10f);
+                    ref DynamicAccP, ref _dynamicAccPBuffer, max: 10f);
             }
 
             left.End();
@@ -164,88 +161,88 @@ namespace DualWield
             right.verticalSpacing = left.verticalSpacing;
             right.Begin(rightRect);
 
-            rightHeight += right.Button("DW_SettingsGroup_Drawing_Title".Translate(), ref settingsGroup_Secondary);
+            rightHeight += right.Button("DW_SettingsGroup_DualWieldSelection_Title".Translate(), ref _settingsGroupSecondary);
 
-            if (settingsGroup_Secondary)
+            if (_settingsGroupSecondary)
             {
-                if (dualWieldSelection.Count < allWeapons.Count)
-                    AddMissingWeaponsForDualWieldSelection(allWeapons);
-                if (dualWieldSelection.Count > allWeapons.Count)
+                if (DualWieldSelection.Count < _allWeapons.Count)
+                    AddMissingWeaponsForDualWieldSelection(_allWeapons);
+                if (DualWieldSelection.Count > _allWeapons.Count)
                 {
-                    RemoveDeprecatedRecords(allWeapons, dualWieldSelection);
+                    RemoveDeprecatedRecords(_allWeapons, DualWieldSelection);
                 }
 
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), dualWieldSelection, GetDualWieldDefaults(allWeapons), allWeapons, "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), twoHandSelection, "DW_Setting_DualWield_DisabledReason".Translate());
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), DualWieldSelection, GetDualWieldDefaults(_allWeapons), _allWeapons, "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), TwoHandSelection, "DW_Setting_DualWield_DisabledReason".Translate());
                 right.Gap(actualHeight + right.verticalSpacing);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }
 
             rightHeight += right.Button("DW_SettingsGroup_TwoHandSelection_Title".Translate(),
-                ref settingsGroup_TwoHanded);
+                ref _settingsGroupTwoHanded);
 
-            if (settingsGroup_TwoHanded)
+            if (_settingsGroupTwoHanded)
             {
-                if (twoHandSelection.Count < allWeapons.Count)
+                if (TwoHandSelection.Count < _allWeapons.Count)
                 {
-                    AddMissingWeaponsForTwoHandSelection(allWeapons);
+                    AddMissingWeaponsForTwoHandSelection(_allWeapons);
                 }
-                if (twoHandSelection.Count > allWeapons.Count)
+                if (TwoHandSelection.Count > _allWeapons.Count)
                 {
-                    RemoveDeprecatedRecords(allWeapons, twoHandSelection);
+                    RemoveDeprecatedRecords(_allWeapons, TwoHandSelection);
                 }
 
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), twoHandSelection, GetTwoHandDefaults(allWeapons), allWeapons, "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(),  dualWieldSelection, "DW_Setting_TwoHand_DisabledReason".Translate());
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), TwoHandSelection, GetTwoHandDefaults(_allWeapons), _allWeapons, "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(),  DualWieldSelection, "DW_Setting_TwoHand_DisabledReason".Translate());
                 right.Gap(actualHeight + right.verticalSpacing);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }
 
             rightHeight += right.TextNumeric("DW_Setting_NPCDualWieldChance_Title".Translate(),
-                "DW_Setting_NPCDualWieldChance_Description".Translate(), ref NPCDualWieldChance,
-                ref npcDualWieldChanceBuffer, max: 100f);
+                "DW_Setting_NPCDualWieldChance_Description".Translate(), ref NpcDualWieldChance,
+                ref _npcDualWieldChanceBuffer, max: 100f);
 
             right.End();
 
             Widgets.EndScrollView();
-            maxHeight = Math.Max(leftHeight, rightHeight);
+            _maxHeight = Math.Max(leftHeight, rightHeight);
             #endregion
         }
         public override void ExposeData()
         {
-            Scribe_Values.Look(ref settingsGroup_Drawing, nameof(settingsGroup_Drawing), true);
-            Scribe_Values.Look(ref settingsGroup_Secondary, nameof(settingsGroup_Secondary), true);
-            Scribe_Values.Look(ref settingsGroup_TwoHanded, nameof(settingsGroup_TwoHanded), true);
-            Scribe_Values.Look(ref settingsGroup_Penalties, nameof(settingsGroup_Penalties), true);
+            Scribe_Values.Look(ref _settingsGroupDrawing, nameof(_settingsGroupDrawing), true);
+            Scribe_Values.Look(ref _settingsGroupSecondary, nameof(_settingsGroupSecondary), true);
+            Scribe_Values.Look(ref _settingsGroupTwoHanded, nameof(_settingsGroupTwoHanded), true);
+            Scribe_Values.Look(ref _settingsGroupPenalties, nameof(_settingsGroupPenalties), true);
 
-            Scribe_Values.Look(ref staticCooldownPOffHand, nameof(staticCooldownPOffHand), 20f);
-            Scribe_Values.Look(ref staticCooldownPMainHand, nameof(staticCooldownPMainHand), 10f);
-            Scribe_Values.Look(ref staticAccPOffHand, nameof(staticAccPOffHand), 10f);
-            Scribe_Values.Look(ref staticAccPMainHand, nameof(staticAccPMainHand), 10f);
-            Scribe_Values.Look(ref dynamicCooldownP, nameof(dynamicCooldownP), 5f);
-            Scribe_Values.Look(ref dynamicAccP, nameof(dynamicAccP), 0.5f);
+            Scribe_Values.Look(ref StaticCooldownPOffHand, nameof(StaticCooldownPOffHand), 20f);
+            Scribe_Values.Look(ref StaticCooldownPMainHand, nameof(StaticCooldownPMainHand), 10f);
+            Scribe_Values.Look(ref StaticAccPOffHand, nameof(StaticAccPOffHand), 10f);
+            Scribe_Values.Look(ref StaticAccPMainHand, nameof(StaticAccPMainHand), 10f);
+            Scribe_Values.Look(ref DynamicCooldownP, nameof(DynamicCooldownP), 5f);
+            Scribe_Values.Look(ref DynamicAccP, nameof(DynamicAccP), 0.5f);
 
-            Scribe_Values.Look(ref meleeAngle, nameof(meleeAngle), 270f);
-            Scribe_Values.Look(ref rangedAngle, nameof(rangedAngle), 135f);
-            Scribe_Values.Look(ref meleeXOffset, nameof(meleeXOffset), 0.4f);
-            Scribe_Values.Look(ref rangedXOffset, nameof(rangedXOffset), 0.1f);
-            Scribe_Values.Look(ref meleeZOffset, nameof(meleeZOffset), 0f);
-            Scribe_Values.Look(ref rangedZOffset, nameof(rangedZOffset), 0f);
+            Scribe_Values.Look(ref MeleeAngle, nameof(MeleeAngle), 270f);
+            Scribe_Values.Look(ref RangedAngle, nameof(RangedAngle), 135f);
+            Scribe_Values.Look(ref MeleeXOffset, nameof(MeleeXOffset), 0.4f);
+            Scribe_Values.Look(ref RangedXOffset, nameof(RangedXOffset), 0.1f);
+            Scribe_Values.Look(ref MeleeZOffset, nameof(MeleeZOffset), 0f);
+            Scribe_Values.Look(ref RangedZOffset, nameof(RangedZOffset), 0f);
 
-            Scribe_Values.Look(ref meleeMirrored, nameof(meleeMirrored), true);
-            Scribe_Values.Look(ref rangedMirrored, nameof(rangedMirrored), true);
+            Scribe_Values.Look(ref MeleeMirrored, nameof(MeleeMirrored), true);
+            Scribe_Values.Look(ref RangedMirrored, nameof(RangedMirrored), true);
 
-            Scribe_Values.Look(ref NPCDualWieldChance, nameof(NPCDualWieldChance), 40f);
+            Scribe_Values.Look(ref NpcDualWieldChance, nameof(NpcDualWieldChance), 40f);
 
-            Scribe_Collections.Look(ref dualWieldSelection, nameof(dualWieldSelection), LookMode.Value);
-            Scribe_Collections.Look(ref twoHandSelection, nameof(twoHandSelection), LookMode.Value);
-            Scribe_Collections.Look(ref customRotations, nameof(customRotations), LookMode.Value);
+            Scribe_Collections.Look(ref DualWieldSelection, nameof(DualWieldSelection), LookMode.Value);
+            Scribe_Collections.Look(ref TwoHandSelection, nameof(TwoHandSelection), LookMode.Value);
+            Scribe_Collections.Look(ref CustomRotations, nameof(CustomRotations), LookMode.Value);
 
             if (Scribe.mode != LoadSaveMode.PostLoadInit) return;
 
-            if (dualWieldSelection == null) dualWieldSelection = new Dictionary<string, Record>();
-            if (twoHandSelection == null) twoHandSelection = new Dictionary<string, Record>();
-            if (customRotations == null) customRotations = new Dictionary<string, Record>();
+            if (DualWieldSelection == null) DualWieldSelection = new Dictionary<string, Record>();
+            if (TwoHandSelection == null) TwoHandSelection = new Dictionary<string, Record>();
+            if (CustomRotations == null) CustomRotations = new Dictionary<string, Record>();
         }
 
         private static void RemoveDeprecatedRecords(List<ThingDef> allWeapons, Dictionary<string, Record> dict)
@@ -263,24 +260,25 @@ namespace DualWield
 
         private void AddMissingWeaponsForRotationSelection(List<ThingDef> allWeapons)
         {
-            foreach (ThingDef weapon in from td in allWeapons where !customRotations.ContainsKey(td.defName) select td)
+            foreach (ThingDef weapon in from td in allWeapons where !CustomRotations.ContainsKey(td.defName) select td)
             {
-                SetRotationDefault(customRotations, weapon);
+                SetRotationDefault(CustomRotations, weapon);
             }
         }
+
         private void AddMissingWeaponsForDualWieldSelection(List<ThingDef> allWeapons)
         {
-            foreach (ThingDef weapon in from td in allWeapons where !dualWieldSelection.ContainsKey(td.defName) select td)
+            foreach (ThingDef weapon in from td in allWeapons where !DualWieldSelection.ContainsKey(td.defName) select td)
             {
-                SetDualWieldDefault(dualWieldSelection, weapon);
+                SetDualWieldDefault(DualWieldSelection, weapon);
             }
         }
 
         private void AddMissingWeaponsForTwoHandSelection(List<ThingDef> allWeapons)
         {
-            foreach (ThingDef weapon in from td in allWeapons where !twoHandSelection.ContainsKey(td.defName) select td)
+            foreach (ThingDef weapon in from td in allWeapons where !TwoHandSelection.ContainsKey(td.defName) select td)
             {
-                SetTwoHandDefault(twoHandSelection, weapon);
+                SetTwoHandDefault(TwoHandSelection, weapon);
             }
         }
 
@@ -370,8 +368,6 @@ namespace DualWield
             }
             return allWeapons;
         }
-
-
     }
 
     public static class SettingsExtensions

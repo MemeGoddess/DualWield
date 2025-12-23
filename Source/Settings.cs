@@ -61,6 +61,23 @@ namespace DualWield
 
         private static Vector2 _scroll = Vector2.zero;
         private static float _maxHeight = 600;
+
+        public void Init()
+        {
+            _allWeapons = GetAllWeapons();
+            if (_allWeapons.Count == 0)
+                throw new Exception("[Dual Wield] Found 0 weapons");
+
+            AddMissingWeaponsForRotationSelection(_allWeapons);
+            RemoveDeprecatedRecords(_allWeapons, CustomRotations);
+
+            AddMissingWeaponsForDualWieldSelection(_allWeapons);
+            RemoveDeprecatedRecords(_allWeapons, DualWieldSelection);
+
+            AddMissingWeaponsForTwoHandSelection(_allWeapons);
+            RemoveDeprecatedRecords(_allWeapons, TwoHandSelection);
+        }
+
         public void DoWindowContents(Rect rect)
         {
 
@@ -117,12 +134,7 @@ namespace DualWield
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                if (CustomRotations.Count < _allWeapons.Count)
-                    AddMissingWeaponsForRotationSelection(_allWeapons);
-                if (CustomRotations.Count > _allWeapons.Count)
-                {
-                    RemoveDeprecatedRecords(_allWeapons, CustomRotations);
-                }
+                
 
                 var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(left.GetRect(1), CustomRotations,
                     GetRotationDefaults(_allWeapons), _allWeapons, "DW_Setting_CustomRotations_Header".Translate());
@@ -165,13 +177,6 @@ namespace DualWield
 
             if (_settingsGroupSecondary)
             {
-                if (DualWieldSelection.Count < _allWeapons.Count)
-                    AddMissingWeaponsForDualWieldSelection(_allWeapons);
-                if (DualWieldSelection.Count > _allWeapons.Count)
-                {
-                    RemoveDeprecatedRecords(_allWeapons, DualWieldSelection);
-                }
-
                 var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), DualWieldSelection, GetDualWieldDefaults(_allWeapons), _allWeapons, "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), TwoHandSelection, "DW_Setting_DualWield_DisabledReason".Translate());
                 right.Gap(actualHeight + right.verticalSpacing);
                 rightHeight += actualHeight;
@@ -183,15 +188,6 @@ namespace DualWield
 
             if (_settingsGroupTwoHanded)
             {
-                if (TwoHandSelection.Count < _allWeapons.Count)
-                {
-                    AddMissingWeaponsForTwoHandSelection(_allWeapons);
-                }
-                if (TwoHandSelection.Count > _allWeapons.Count)
-                {
-                    RemoveDeprecatedRecords(_allWeapons, TwoHandSelection);
-                }
-
                 var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), TwoHandSelection, GetTwoHandDefaults(_allWeapons), _allWeapons, "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(),  DualWieldSelection, "DW_Setting_TwoHand_DisabledReason".Translate());
                 right.Gap(actualHeight + right.verticalSpacing);
                 rightHeight += actualHeight;
@@ -358,7 +354,6 @@ namespace DualWield
         private static List<ThingDef> GetAllWeapons()
         {
             List<ThingDef> allWeapons = new List<ThingDef>();
-
             Predicate<ThingDef> isWeapon = (ThingDef td) => td.equipmentType == EquipmentType.Primary && !td.destroyOnDrop;
             foreach (ThingDef thingDef in from td in DefDatabase<ThingDef>.AllDefs
                      where isWeapon(td)

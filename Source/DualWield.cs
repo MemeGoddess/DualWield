@@ -22,6 +22,10 @@ namespace DualWield
         {
             Instance = this;
             Settings = GetSettings<DWSettings>();
+            LongEventHandler.ExecuteWhenFinished(() => Settings.Init());
+
+            var harmony = new HarmonyLib.Harmony("MemeGoddess.DualWield");
+            harmony.PatchAll();
         }
 
         public override string SettingsCategory()
@@ -51,6 +55,9 @@ namespace DualWield
     internal static class ExtendedDataStorageLoader
     {
         [HarmonyPostfix]
-        private static void LoadComp(World __instance, bool loadFrom) => DualWield.Instance.RefreshExtendedDataStorage();
+        private static void LoadComp(World __instance)
+        {
+            DualWield.Instance.RefreshExtendedDataStorage();
+        }
     }
 }

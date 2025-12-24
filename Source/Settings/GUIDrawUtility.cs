@@ -90,26 +90,9 @@ namespace DualWield.Settings
 
             TooltipHandler.TipRegion(iconRect, disabled ? disabledReason : thingDef.label);
 
-            Graphic g2 = null;
+            
             Color color = GetColor(thingDef);
-            if (thingDef.graphicData != null && thingDef.graphicData.Graphic != null)
-            {
-                Graphic g = thingDef.graphicData.Graphic;
-                g2 = thingDef.graphicData.Graphic.GetColoredVersion(g.Shader, color, color);
-            }
-            Texture resolvedIcon;
-            if (!thingDef.uiIconPath.NullOrEmpty())
-            {
-                resolvedIcon = thingDef.uiIcon;
-            }
-            else if (g2 != null)
-            {
-                resolvedIcon = g2.MatSingle.mainTexture;
-            }
-            else
-            {
-                resolvedIcon = new Texture2D(0,0);
-            }
+            var resolvedIcon = GenerateIcon(thingDef, color);
             GUI.color = color;
             GUI.DrawTexture(iconRect, resolvedIcon);
             if (disabled)
@@ -126,6 +109,36 @@ namespace DualWield.Settings
             else
                 return false;
 
+        }
+
+        private static Dictionary<(ThingDef, Color), Texture> _textureCache = new Dictionary<(ThingDef, Color), Texture>();
+        private static Texture GenerateIcon(ThingDef thingDef, Color color)
+        {
+            Graphic g2 = null;
+
+            if(_textureCache.TryGetValue((thingDef, color), out var cachedTexture))
+                return cachedTexture;
+
+            if (thingDef.graphicData != null && thingDef.graphicData.Graphic != null)
+            {
+                Graphic g = thingDef.graphicData.Graphic;
+                g2 = thingDef.graphicData.Graphic.GetColoredVersion(g.Shader, color, color);
+            }
+            Texture resolvedIcon;
+            if (!thingDef.uiIconPath.NullOrEmpty())
+            {
+                resolvedIcon = thingDef.uiIcon;
+            }
+            else if (g2 != null)
+            {
+                resolvedIcon = g2.MatSingle.mainTexture;
+            }
+            else
+            {
+                resolvedIcon = new Texture2D(0, 0);
+            }
+            _textureCache.Add((thingDef, color), resolvedIcon);
+            return resolvedIcon;
         }
 
         private static Color GetPixel(Texture2D tex, float x, float y)

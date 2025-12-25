@@ -10,6 +10,7 @@ using HarmonyLib;
 
 namespace DualWield.Settings
 {
+    [StaticConstructorOnStartup]
     public class GUIDrawUtility
     {
         private const float TextMargin = 20f;
@@ -23,8 +24,12 @@ namespace DualWield.Settings
         private static Color selectedBackground = new Color(0f, 0.5f, 0, 0.1f);
         private const float IconSize = 32f;
         private const float IconGap = 1f;
-        private static Texture2D disabledTex = ContentFinder<Texture2D>.Get("UI/ExclamationMark", true);
+        private static Texture2D disabledTex;
 
+        static GUIDrawUtility()
+        {
+            disabledTex = ContentFinder<Texture2D>.Get("UI/ExclamationMark", true);
+        }
 
         private static void DrawBackground(Rect rect, Color background)
         {

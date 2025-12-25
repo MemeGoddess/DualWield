@@ -12,17 +12,10 @@ namespace DualWield.Settings
 {
     public class GUIDrawUtility
     {
-
-        private const float ContentPadding = 5f;
-
         private const float TextMargin = 20f;
         private const float BottomMargin = 2f;
-        private const float buttonHeight = 28f;
-        private static readonly Color iconBaseColor = new Color(0.5f, 0.5f, 0.5f, 1f);
         private static readonly Color iconMouseOverColor = new Color(0.6f, 0.6f, 0.4f, 1f);
-        private static readonly Color constGrey = new Color(0.8f, 0.8f, 0.8f, 0.5f);
         private static readonly Color disabledColor = new Color(0.7f,0.7f,0.7f,0.2f);
-        private static readonly Color SelectedColor = new Color(0.5f, 1f, 0.5f, 1f);
         private static readonly Color notSelectedColor = new Color(0.5f, 0, 0, 0.1f);
 
 
@@ -54,51 +47,43 @@ namespace DualWield.Settings
         }
         private static Color GetColor(ThingDef thingDef)
         {
-            if (thingDef.graphicData != null)
-            {
-                return thingDef.graphicData.color;
-            }
-            return Color.white;
+            var stuff = GenStuff.DefaultStuffFor(thingDef);
+            if (stuff != null)
+                return thingDef.GetColorForStuff(stuff);
+
+            return thingDef.graphicData?.color ?? Color.white;
         }
 
         private static bool DrawTileForThingDef(ThingDef thingDef, KeyValuePair<String, Record> kv, Rect contentRect, Vector2 iconOffset, int buttonID, bool disabled, string disabledReason = "")
         {
-            if(thingDef == null) {
+            if(thingDef == null)
                 return false;
-            }
+
             var iconRect = new Rect(contentRect.x + iconOffset.x, contentRect.y + iconOffset.y, IconSize, IconSize);
             MouseoverSounds.DoRegion(iconRect, SoundDefOf.Mouseover_Command);
-            Color save = GUI.color;
+            var save = GUI.color;
+
             if (Mouse.IsOver(iconRect))
-            {
                 GUI.color = iconMouseOverColor;
-            }
             else if (disabled)
-            {
                 GUI.color = disabledColor;
-            }
             else if (kv.Value.isSelected == true)
-            {
                 GUI.color = selectedBackground;
-            }
             else
-            {
                 GUI.color = notSelectedColor;
-            }
+
             GUI.DrawTexture(iconRect, TexUI.FastFillTex);
             GUI.color = save;
 
             TooltipHandler.TipRegion(iconRect, disabled ? disabledReason : thingDef.label);
 
-            
-            Color color = GetColor(thingDef);
+            var color = GetColor(thingDef);
             var resolvedIcon = GenerateIcon(thingDef, color);
             GUI.color = color;
             GUI.DrawTexture(iconRect, resolvedIcon);
-            if (disabled)
-            {
+            if (disabled) 
                 GUI.DrawTexture(iconRect, disabledTex);
-            }
+            
             GUI.color = Color.white;
 
             if (Widgets.ButtonInvisible(iconRect, true))
@@ -106,8 +91,8 @@ namespace DualWield.Settings
                 Event.current.button = buttonID;
                 return true;
             }
-            else
-                return false;
+
+            return false;
 
         }
 

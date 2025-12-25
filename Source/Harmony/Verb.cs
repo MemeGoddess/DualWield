@@ -33,19 +33,26 @@ namespace DualWield.Harmony
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var instructionsList = new List<CodeInstruction>(instructions);
+            var patched = false;
             foreach (CodeInstruction instruction in instructionsList)
             {
-
                 if (instruction.operand == typeof(Pawn_StanceTracker).GetMethod("SetStance"))
                 {
                     yield return new CodeInstruction(OpCodes.Call, typeof(Verb_TryCastNextBurstShot).GetMethod("SetStanceOffHand"));
+                    patched = true;
                 }
                 else
                 {
                     yield return instruction;
                 }
             }
+            if(!patched)
+            {
+                Log.Error("Unable to patch SetStance for DualWield. This causes dual wielding weapons to have no cooldown. " +
+                          "It's likely that another mod is also patching this method, but I haven't been able to narrow it down yet. - Meme Goddess");
+            }
         }
+
         public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker,  Stance_Cooldown stance)
         {
             ThingWithComps offHandEquip = null;

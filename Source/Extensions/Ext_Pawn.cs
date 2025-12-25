@@ -87,31 +87,24 @@ namespace DualWield
         }
         public static Verb TryGetMeleeVerbOffHand(this Pawn instance, Thing target)
         {
+            var usableVerbs = new List<VerbEntry>();
+            if (instance.equipment == null ||
+                !instance.equipment.TryGetOffHandEquipment(out var offHandEquip))
+                return null;
 
-            List<VerbEntry> usableVerbs = new List<VerbEntry>();
-            if (instance.equipment != null && instance.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEquip))
-            {              
-                CompEquippable comp = offHandEquip.GetComp<CompEquippable>();
-                if (comp != null)
-                {
-                    List<Verb> allVerbs = comp.AllVerbs;
-                    if (allVerbs != null)
-                    {
-                        for (int k = 0; k < allVerbs.Count; k++)
-                        {
-                            if (allVerbs[k].IsMeleeAttack && allVerbs[k].IsStillUsableBy(instance))
-                            {
-                                usableVerbs.Add(new VerbEntry(allVerbs[k], instance, allVerbs, allVerbs.Count));
-                            }
-                        }
-                    }
-                }           
-            }
-            if(usableVerbs.TryRandomElementByWeight((VerbEntry ve) => ve.GetSelectionWeight(target), out VerbEntry result))
-            {
-                return result.verb;
-            }
-            return null;       
+            var comp = offHandEquip.GetComp<CompEquippable>();
+
+            var allVerbs = comp?.AllVerbs?.Where(x => x.IsMeleeAttack).ToList();
+            if (allVerbs == null)
+                return null;
+
+            usableVerbs.AddRange(allVerbs
+                    .Where(x => x.IsStillUsableBy(instance))
+                    .Select(x => new VerbEntry(x, instance, allVerbs, allVerbs.Count)));
+
+            return usableVerbs.TryRandomElementByWeight(ve => ve.GetSelectionWeight(target), out var result) 
+                ? result.verb 
+                : null;
         }
 
     }

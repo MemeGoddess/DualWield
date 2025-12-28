@@ -29,6 +29,7 @@ namespace DualWield.Harmony
     [HarmonyPatch(typeof(Verb), "TryCastNextBurstShot")]
     public class Verb_TryCastNextBurstShot
     {
+        [HarmonyPriority(Priority.Low)]
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var instructionsList = new List<CodeInstruction>(instructions);

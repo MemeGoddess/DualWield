@@ -662,18 +662,88 @@ namespace DualWield.Harmony
             return delta.AngleFlat();
         }
 
-        private static void SetAnglesAndOffsets(
-            ThingWithComps mainEq, ThingWithComps offEq, float aimAngle, Pawn pawn,
-            ref Vector3 offsetMain, ref Vector3 offsetOff,
-            ref float mainAngle, ref float offAngle,
-            bool mainAiming, bool offAiming)
+        private static bool IsMeleeWeapon(ThingWithComps eq)
         {
-            // Replace with your real implementation.
-            // This placeholder merely separates the weapons a bit.
-            offsetMain = new Vector3(0.05f, 0f, 0f);
-            offsetOff = new Vector3(-0.05f, 0f, 0f);
-            mainAngle = aimAngle;
-            offAngle = aimAngle;
+            if (eq == null)
+            {
+                return false;
+            }
+            if (eq.TryGetComp<CompEquippable>() is CompEquippable ceq)
+            {
+                if (ceq.PrimaryVerb.IsMeleeAttack)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
+
+        private static void SetAnglesAndOffsets(Thing eq, ThingWithComps offHandEquip, float aimAngle, Pawn pawn, ref Vector3 offsetMainHand, ref Vector3 offsetOffHand, ref float mainHandAngle, ref float offHandAngle, bool mainHandAiming, bool offHandAiming)
+        {
+            bool offHandIsMelee = IsMeleeWeapon(offHandEquip);
+            bool mainHandIsMelee = IsMeleeWeapon(pawn.equipment.Primary);
+            float meleeAngleFlipped = DualWield.Settings.MeleeMirrored ? 360 - DualWield.Settings.MeleeAngle : DualWield.Settings.MeleeAngle;
+            float rangedAngleFlipped = DualWield.Settings.RangedMirrored ? 360 - DualWield.Settings.RangedAngle : DualWield.Settings.RangedAngle;
+
+            if (pawn.Rotation == Rot4.East)
+            {
+                offsetOffHand.y = -1f;
+                offsetOffHand.z = 0.1f;
+            }
+            else if (pawn.Rotation == Rot4.West)
+            {
+                offsetMainHand.y = -1f;
+                //zOffsetMain = 0.25f;
+                offsetOffHand.z = -0.1f;
+            }
+            else if (pawn.Rotation == Rot4.North)
+            {
+                if (!mainHandAiming && !offHandAiming)
+                {
+                    offsetMainHand.x = mainHandIsMelee ? DualWield.Settings.MeleeXOffset : DualWield.Settings.RangedXOffset;
+                    offsetOffHand.x = offHandIsMelee ? -DualWield.Settings.MeleeXOffset : -DualWield.Settings.RangedXOffset;
+                    offsetMainHand.z = mainHandIsMelee ? DualWield.Settings.MeleeZOffset : DualWield.Settings.RangedZOffset;
+                    offsetOffHand.z = offHandIsMelee ? -DualWield.Settings.MeleeZOffset : -DualWield.Settings.RangedZOffset;
+                    offHandAngle = offHandIsMelee ? DualWield.Settings.MeleeAngle : DualWield.Settings.RangedAngle;
+                    mainHandAngle = mainHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
+
+                }
+                else
+                {
+                    offsetOffHand.x = -0.1f;
+                }
+            }
+            else
+            {
+                if (!mainHandAiming && !offHandAiming)
+                {
+                    offsetMainHand.y = 1f;
+                    offsetMainHand.x = mainHandIsMelee ? -DualWield.Settings.MeleeXOffset : -DualWield.Settings.RangedXOffset;
+                    offsetOffHand.x = offHandIsMelee ? DualWield.Settings.MeleeXOffset : DualWield.Settings.RangedXOffset;
+                    offsetMainHand.z = mainHandIsMelee ? -DualWield.Settings.MeleeZOffset : -DualWield.Settings.RangedZOffset;
+                    offsetOffHand.z = offHandIsMelee ? DualWield.Settings.MeleeZOffset : DualWield.Settings.RangedZOffset;
+                    offHandAngle = offHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
+                    mainHandAngle = mainHandIsMelee ? DualWield.Settings.MeleeAngle : DualWield.Settings.RangedAngle;
+                }
+                else
+                {
+                    offsetOffHand.x = 0.1f;
+                }
+            }
+            if (!pawn.Rotation.IsHorizontal)
+            {
+                if (DualWield.Settings.CustomRotations.TryGetValue((offHandEquip.def.defName), out Record offHandValue))
+                {
+                    offHandAngle += pawn.Rotation == Rot4.North ? offHandValue.extraRotation : -offHandValue.extraRotation;
+                    //offHandAngle %= 360;
+                }
+                if (DualWield.Settings.CustomRotations.TryGetValue((eq.def.defName), out Record mainHandValue))
+                {
+                    mainHandAngle += pawn.Rotation == Rot4.North ? -mainHandValue.extraRotation : mainHandValue.extraRotation;
+                    //mainHandAngle %= 360;
+                }
+            }
+        }
+
     }
 }

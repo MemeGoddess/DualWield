@@ -34,8 +34,8 @@ namespace DualWield.Harmony
     }
 
 
-    [HarmonyPatch(typeof(PawnRenderUtility))]
-    [HarmonyPatch(nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
+    //[HarmonyPatch(typeof(PawnRenderUtility))]
+    //[HarmonyPatch(nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
     public class PawnRenderUtility_DrawEquipmentAndApparelExtras
     {
 
@@ -103,6 +103,26 @@ namespace DualWield.Harmony
                     break;
             }
             DrawEquipmentModified(_ctxPawn.equipment.Primary, drawPos, aimAngle, _ctxPawn);
+        }
+
+        public static bool ShouldPatch(Thing eq, Vector3 drawLoc, float aimAngle, Pawn pawn)
+        {
+            ThingWithComps offHandEquip = null;
+            if (pawn.equipment == null)
+            {
+                return false;
+            }
+            if (pawn.equipment.TryGetOffHandEquipment(out ThingWithComps result))
+            {
+                offHandEquip = result;
+            }
+            if (offHandEquip == null)
+            {
+                PawnRenderUtility.DrawEquipmentAiming(eq, drawLoc, aimAngle);
+                return false;
+            }
+
+            return true;
         }
 
         public static void DrawEquipmentModified(Thing eq, Vector3 drawLoc, float aimAngle, Pawn pawn)
@@ -275,6 +295,280 @@ namespace DualWield.Harmony
                 }
             }
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(PawnRenderUtility))]
+    [HarmonyPatch(nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
+    public static class Patch_DualWield_DrawEquipmentAiming_Transpiler
+    {
+        private static readonly MethodInfo MI_DrawEquipmentAiming =
+            AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming),
+                new[] { typeof(ThingWithComps), typeof(Vector3), typeof(float) });
+
+        private static readonly MethodInfo MI_ShouldDoOffhandWork =
+            AccessTools.Method(typeof(Patch_DualWield_DrawEquipmentAiming_Transpiler), nameof(ShouldDoOffhandWork));
+
+        private static readonly MethodInfo MI_PrepareOffhandDraw =
+            AccessTools.Method(
+                typeof(Patch_DualWield_DrawEquipmentAiming_Transpiler),
+                nameof(PrepareOffhandDraw),
+                new[]
+                {
+                    typeof(Pawn),
+                    typeof(ThingWithComps),
+                    typeof(Vector3),
+                    typeof(float),
+                    typeof(ThingWithComps).MakeByRefType(),
+                    typeof(Vector3).MakeByRefType(),
+                    typeof(float).MakeByRefType(),
+                });
+
+        /// <summary>
+        /// Return true if this pawn should do offhand rendering work at this point.
+        /// Keep this fast: it’s executed in the render path.
+        /// </summary>
+        public static bool ShouldDoOffhandWork(Pawn pawn)
+        {
+            if (pawn == null) return false;
+            if (pawn.equipment == null) return false;
+
+            // Your mod's API:
+            // return pawn.equipment.TryGetOffHandEquipment(out _);
+            // If you want to avoid out var allocation, just do the out.
+            return pawn.equipment.TryGetOffHandEquipment(out ThingWithComps offhand) && offhand != null;
+        }
+
+        public static bool PrepareOffhandDraw(
+    Pawn pawn,
+    ThingWithComps mainEq,
+    Vector3 drawLoc,
+    float aimAngle,
+    out ThingWithComps offEq,
+    out Vector3 offDrawPos,
+    out float offDrawAngle)
+        {
+            offEq = null;
+            offDrawPos = default;
+            offDrawAngle = default;
+
+            // Bail out safely
+            if (pawn == null) return false;
+            if (pawn.equipment == null) return false;
+
+            if (!pawn.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEquip) || offHandEquip == null)
+                return false;
+
+            // Avoid accidental double-draw of the same instance
+            if (offHandEquip == pawn.equipment.Primary)
+                return false;
+
+            float mainHandAngle = aimAngle;
+            float offHandAngle = aimAngle;
+
+            Stance_Busy mainStance = pawn.stances?.curStance as Stance_Busy;
+
+            Stance_Busy offHandStance = null;
+            var offHandStances = pawn.GetStancesOffHand();
+            if (offHandStances != null)
+                offHandStance = offHandStances.curStance as Stance_Busy;
+
+            LocalTargetInfo focusTarg = LocalTargetInfo.Invalid;
+            if (mainStance != null && !mainStance.neverAimWeapon)
+                focusTarg = mainStance.focusTarg;
+            else if (offHandStance != null && !offHandStance.neverAimWeapon)
+                focusTarg = offHandStance.focusTarg;
+
+            bool mainHandAiming = CurrentlyAiming(mainStance);
+            bool offHandAiming = CurrentlyAiming(offHandStance);
+
+            Vector3 offsetMainHand = default;
+            Vector3 offsetOffHand = default;
+
+            // Your existing helper (unchanged)
+            SetAnglesAndOffsets(mainEq, offHandEquip, aimAngle, pawn,
+                ref offsetMainHand, ref offsetOffHand,
+                ref mainHandAngle, ref offHandAngle,
+                mainHandAiming, offHandAiming);
+
+            // Compute the final draw params for the offhand (NO drawing here)
+            if ((offHandAiming || mainHandAiming) && focusTarg.IsValid)
+            {
+                offHandAngle = GetAimingRotation(pawn, focusTarg);
+
+                // Make sure offhand renders “on top”
+                offsetOffHand.y += 0.1f;
+
+                Vector3 adjustedDrawPos = pawn.DrawPos
+                    + new Vector3(0f, 0f, 0.4f).RotatedBy(offHandAngle)
+                    + offsetOffHand;
+
+                offEq = offHandEquip;
+                offDrawPos = adjustedDrawPos;
+                offDrawAngle = offHandAngle;
+                return true;
+            }
+            else
+            {
+                offEq = offHandEquip;
+                offDrawPos = drawLoc + offsetOffHand;
+                offDrawAngle = offHandAngle;
+                return true;
+            }
+        }
+
+
+        public static IEnumerable<CodeInstruction> Transpiler(MethodBase __originalMethod, ILGenerator il, IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+            int pawnArgIndex = FindPawnArgumentIndex(__originalMethod);
+            if (pawnArgIndex < 0)
+            {
+                Log.Warning($"[YourMod] Could not find Pawn parameter in {__originalMethod.DeclaringType?.FullName}.{__originalMethod.Name}. Patch skipped.");
+                return codes;
+            }
+
+            // Locals to store original call args
+            LocalBuilder lb_eq = il.DeclareLocal(typeof(ThingWithComps));
+            LocalBuilder lb_drawLoc = il.DeclareLocal(typeof(Vector3));
+            LocalBuilder lb_aimAngle = il.DeclareLocal(typeof(float));
+
+            // Locals for offhand draw outputs
+            LocalBuilder lb_offEq = il.DeclareLocal(typeof(ThingWithComps));
+            LocalBuilder lb_offPos = il.DeclareLocal(typeof(Vector3));
+            LocalBuilder lb_offAngle = il.DeclareLocal(typeof(float));
+
+            for (int i = 0; i < codes.Count; i++)
+            {
+                var ci = codes[i];
+
+                if (ci.opcode == OpCodes.Call && ci.operand is MethodInfo mi && mi == MI_DrawEquipmentAiming)
+                {
+                    // Label to skip the injected offhand path
+                    Label skipLabel = il.DefineLabel();
+                    if (i + 1 < codes.Count)
+                        codes[i + 1].labels.Add(skipLabel);
+
+                    // BEFORE call: stash args then reload them so the original call remains in place
+                    var injectedBefore = new List<CodeInstruction>
+            {
+                new CodeInstruction(OpCodes.Stloc, lb_aimAngle),
+                new CodeInstruction(OpCodes.Stloc, lb_drawLoc),
+                new CodeInstruction(OpCodes.Stloc, lb_eq),
+
+                new CodeInstruction(OpCodes.Ldloc, lb_eq),
+                new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
+                new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
+            };
+
+                    codes.InsertRange(i, injectedBefore);
+                    i += injectedBefore.Count;
+
+                    // The original call remains at codes[i]
+
+                    // AFTER call: call PrepareOffhandDraw(...) -> if true, emit second DrawEquipmentAiming call
+                    var injectedAfter = new List<CodeInstruction>
+            {
+                // bool PrepareOffhandDraw(pawn, eq, drawLoc, aimAngle, out offEq, out offPos, out offAngle)
+                LoadArg(pawnArgIndex),
+                new CodeInstruction(OpCodes.Ldloc, lb_eq),
+                new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
+                new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
+
+                new CodeInstruction(OpCodes.Ldloca_S, lb_offEq),
+                new CodeInstruction(OpCodes.Ldloca_S, lb_offPos),
+                new CodeInstruction(OpCodes.Ldloca_S, lb_offAngle),
+
+                new CodeInstruction(OpCodes.Call, MI_PrepareOffhandDraw),
+                new CodeInstruction(OpCodes.Brfalse_S, skipLabel),
+
+                // *** SECOND CALL PRESENT IN IL ***
+                new CodeInstruction(OpCodes.Ldloc, lb_offEq),
+                new CodeInstruction(OpCodes.Ldloc, lb_offPos),
+                new CodeInstruction(OpCodes.Ldloc, lb_offAngle),
+                new CodeInstruction(OpCodes.Call, MI_DrawEquipmentAiming),
+            };
+
+                    codes.InsertRange(i + 1, injectedAfter);
+                    i += injectedAfter.Count;
+
+                    // If you only want to patch the first call site, uncomment:
+                    // break;
+                }
+            }
+
+            return codes;
+        }
+
+        private static int FindPawnArgumentIndex(MethodBase original)
+        {
+            var parameters = original.GetParameters();
+
+            // For instance methods: arg0 is "this", real params start at 1
+            // For static methods: arg0 is first param
+            int baseIndex = original.IsStatic ? 0 : 1;
+
+            for (int p = 0; p < parameters.Length; p++)
+            {
+                if (parameters[p].ParameterType == typeof(Pawn))
+                    return baseIndex + p;
+            }
+
+            return -1;
+        }
+
+        private static CodeInstruction LoadArg(int index)
+        {
+            // Use the short forms where possible
+            switch (index)
+            {
+                case 0:
+                    return new CodeInstruction(OpCodes.Ldarg_0);
+                case 1:
+                    return new CodeInstruction(OpCodes.Ldarg_1);
+                case 2:
+                    return new CodeInstruction(OpCodes.Ldarg_2);
+                case 3:
+                    return new CodeInstruction(OpCodes.Ldarg_3);
+                default:
+                    return new CodeInstruction(OpCodes.Ldarg_S, (byte)index);
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // The helpers below are placeholders — you already have equivalents.
+        // Keep/replace them with your existing implementations.
+        // --------------------------------------------------------------------
+
+        private static bool CurrentlyAiming(Stance_Busy stance)
+        {
+            if (stance == null) return false;
+            if (stance.neverAimWeapon) return false;
+            return stance.focusTarg.IsValid;
+        }
+
+        private static float GetAimingRotation(Pawn pawn, LocalTargetInfo target)
+        {
+            // Replace with your real method; this is a very rough placeholder.
+            Vector3 a = pawn.DrawPos;
+            Vector3 b = target.Cell.ToVector3Shifted();
+            Vector3 delta = b - a;
+            return delta.AngleFlat();
+        }
+
+        private static void SetAnglesAndOffsets(
+            ThingWithComps mainEq, ThingWithComps offEq, float aimAngle, Pawn pawn,
+            ref Vector3 offsetMain, ref Vector3 offsetOff,
+            ref float mainAngle, ref float offAngle,
+            bool mainAiming, bool offAiming)
+        {
+            // Replace with your real implementation.
+            // This placeholder merely separates the weapons a bit.
+            offsetMain = new Vector3(0.05f, 0f, 0f);
+            offsetOff = new Vector3(-0.05f, 0f, 0f);
+            mainAngle = aimAngle;
+            offAngle = aimAngle;
         }
     }
 }

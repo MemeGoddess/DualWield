@@ -298,10 +298,16 @@ namespace DualWield.Harmony
         }
     }
 
-    [HarmonyPatch(typeof(PawnRenderUtility))]
-    [HarmonyPatch(nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
+    [HarmonyPatch]
     public static class Patch_DualWield_DrawEquipmentAiming_Transpiler
     {
+
+        [HarmonyTargetMethods]
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras));
+            //yield return AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawCarriedWeapon));
+        }
         private static readonly MethodInfo MI_DrawEquipmentAiming =
             AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming),
                 new[] { typeof(ThingWithComps), typeof(Vector3), typeof(float) });
@@ -344,6 +350,123 @@ namespace DualWield.Harmony
                 typeof(Patch_DualWield_DrawEquipmentAiming_Transpiler),
                 nameof(AdjustMainHandDrawLoc),
                 new[] { typeof(Pawn), typeof(Vector3) });
+
+        [ThreadStatic] private static Pawn _ctxPawn;
+
+
+        public static bool Prefix(Pawn pawn, Vector3 drawPos, Rot4 facing, PawnRenderFlags flags)
+        {
+            _ctxPawn = pawn;
+            return true;
+        }
+
+        public static IEnumerable<CodeInstruction> Transpiler(MethodBase __originalMethod, ILGenerator il,
+            IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+            int pawnArgIndex = FindPawnArgumentIndex(__originalMethod);
+            if (pawnArgIndex < 0)
+            {
+                Log.Warning(
+                    $"[DualWield] Could not find Pawn parameter in {__originalMethod.DeclaringType?.FullName}.{__originalMethod.Name}. Patch skipped.");
+                return codes;
+            }
+
+            FieldInfo pawn = AccessTools.Field(typeof(Patch_DualWield_DrawEquipmentAiming_Transpiler), nameof(_ctxPawn));
+
+            // Locals to store original call args
+            LocalBuilder lb_eq = il.DeclareLocal(typeof(ThingWithComps));
+            LocalBuilder lb_drawLoc = il.DeclareLocal(typeof(Vector3));
+            LocalBuilder lb_aimAngle = il.DeclareLocal(typeof(float));
+
+            LocalBuilder lb_drawLocRaw = il.DeclareLocal(typeof(Vector3));   // original drawLoc as it existed on the stack
+            LocalBuilder lb_drawLocMain = il.DeclareLocal(typeof(Vector3));  // adjusted drawLoc for the original call only
+
+            LocalBuilder lb_mainEq = il.DeclareLocal(typeof(ThingWithComps));
+            LocalBuilder lb_mainPos = il.DeclareLocal(typeof(Vector3));
+            LocalBuilder lb_mainAngle = il.DeclareLocal(typeof(float));
+
+            // Locals for offhand draw outputs
+            LocalBuilder lb_offEq = il.DeclareLocal(typeof(ThingWithComps));
+            LocalBuilder lb_offPos = il.DeclareLocal(typeof(Vector3));
+            LocalBuilder lb_offAngle = il.DeclareLocal(typeof(float));
+
+            for (int i = 0; i < codes.Count; i++)
+            {
+                var ci = codes[i];
+
+                if (ci.opcode == OpCodes.Call && ci.operand is MethodInfo mi && mi == MI_DrawEquipmentAiming)
+                {
+
+                    // BEFORE call: stash args then reload them so the original call remains in place
+
+                    var injectedBefore = new List<CodeInstruction>
+                    {
+                        new CodeInstruction(OpCodes.Stloc, lb_aimAngle),
+                        new CodeInstruction(OpCodes.Stloc, lb_drawLoc),
+                        new CodeInstruction(OpCodes.Stloc, lb_eq),
+
+                        LoadArg(pawnArgIndex),
+                        new CodeInstruction(OpCodes.Ldloc, lb_eq),
+                        new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
+                        new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
+
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainEq),
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainPos),
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainAngle),
+                        new CodeInstruction(OpCodes.Call, MI_PrepareMainhandDraw),
+
+                        new CodeInstruction(OpCodes.Ldloc, lb_mainEq),
+                        new CodeInstruction(OpCodes.Ldloc, lb_mainPos),
+                        new CodeInstruction(OpCodes.Ldloc, lb_mainAngle),
+                    };
+
+                    codes.InsertRange(i, injectedBefore);
+                    i += injectedBefore.Count;
+
+                    // The original call remains at codes[i]
+                    var skipLabel = il.DefineLabel();
+                    var originalNext = (i + 1 < codes.Count) ? codes[i + 1] : null;
+                    var preservedNextLabels = originalNext != null ? new List<Label>(originalNext.labels) : new List<Label>();
+                    if (originalNext != null) originalNext.labels.Clear();
+                    // AFTER call: call PrepareOffhandDraw(...) -> if true, emit second DrawEquipmentAiming call
+                    var injectedAfter = new List<CodeInstruction>
+                    {
+                        // bool PrepareOffhandDraw(pawn, eq, drawLoc, aimAngle, out offEq, out offPos, out offAngle)
+                        LoadArg(pawnArgIndex),
+                        new CodeInstruction(OpCodes.Ldloc, lb_eq),
+                        new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
+                        new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
+
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_offEq),
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_offPos),
+                        new CodeInstruction(OpCodes.Ldloca_S, lb_offAngle),
+
+                        new CodeInstruction(OpCodes.Call, MI_PrepareOffhandDraw),
+                        new CodeInstruction(OpCodes.Brfalse_S, skipLabel),
+
+                        // *** SECOND CALL PRESENT IN IL ***
+                        new CodeInstruction(OpCodes.Ldloc, lb_offEq),
+                        new CodeInstruction(OpCodes.Ldloc, lb_offPos),
+                        new CodeInstruction(OpCodes.Ldloc, lb_offAngle),
+                        new CodeInstruction(OpCodes.Call, MI_DrawEquipmentAiming),
+                    };
+                    var skipNop = new CodeInstruction(OpCodes.Nop);
+                    skipNop.labels.Add(skipLabel);
+                    foreach (var lab in preservedNextLabels) skipNop.labels.Add(lab);
+
+                    codes.InsertRange(i + 1, injectedAfter);
+                    codes.Insert(i + 1 + injectedAfter.Count, skipNop);
+                    i += injectedAfter.Count + 1;
+
+                    // If you only want to patch the first call site, uncomment:
+                    // break;
+                }
+            }
+
+            return codes;
+        }
 
         /// <summary>
         /// Return true if this pawn should do offhand rendering work at this point.
@@ -420,8 +543,8 @@ namespace DualWield.Harmony
                 // Make sure offhand renders “on top”
                 offsetOffHand.y += 0.1f;
 
-                Vector3 adjustedDrawPos = pawn.DrawPos
-                    + new Vector3(0f, 0f, 0.4f).RotatedBy(offHandAngle)
+                Vector3 adjustedDrawPos = drawLoc
+                    + new Vector3(0f, 0f, 0f)
                     + offsetOffHand;
 
                 offEq = offHandEquip;
@@ -502,109 +625,7 @@ namespace DualWield.Harmony
         }
 
 
-        public static IEnumerable<CodeInstruction> Transpiler(MethodBase __originalMethod, ILGenerator il,
-            IEnumerable<CodeInstruction> instructions)
-        {
-            var codes = new List<CodeInstruction>(instructions);
-
-            int pawnArgIndex = FindPawnArgumentIndex(__originalMethod);
-            if (pawnArgIndex < 0)
-            {
-                Log.Warning(
-                    $"[YourMod] Could not find Pawn parameter in {__originalMethod.DeclaringType?.FullName}.{__originalMethod.Name}. Patch skipped.");
-                return codes;
-            }
-
-            // Locals to store original call args
-            LocalBuilder lb_eq = il.DeclareLocal(typeof(ThingWithComps));
-            LocalBuilder lb_drawLoc = il.DeclareLocal(typeof(Vector3));
-            LocalBuilder lb_aimAngle = il.DeclareLocal(typeof(float));
-
-            LocalBuilder lb_drawLocRaw = il.DeclareLocal(typeof(Vector3));   // original drawLoc as it existed on the stack
-            LocalBuilder lb_drawLocMain = il.DeclareLocal(typeof(Vector3));  // adjusted drawLoc for the original call only
-
-            LocalBuilder lb_mainEq = il.DeclareLocal(typeof(ThingWithComps));
-            LocalBuilder lb_mainPos = il.DeclareLocal(typeof(Vector3));
-            LocalBuilder lb_mainAngle = il.DeclareLocal(typeof(float));
-
-            // Locals for offhand draw outputs
-            LocalBuilder lb_offEq = il.DeclareLocal(typeof(ThingWithComps));
-            LocalBuilder lb_offPos = il.DeclareLocal(typeof(Vector3));
-            LocalBuilder lb_offAngle = il.DeclareLocal(typeof(float));
-
-            for (int i = 0; i < codes.Count; i++)
-            {
-                var ci = codes[i];
-
-                if (ci.opcode == OpCodes.Call && ci.operand is MethodInfo mi && mi == MI_DrawEquipmentAiming)
-                {
-
-                    // BEFORE call: stash args then reload them so the original call remains in place
-                    var injectedBefore = new List<CodeInstruction>
-                    {
-                        new CodeInstruction(OpCodes.Stloc, lb_aimAngle),
-                        new CodeInstruction(OpCodes.Stloc, lb_drawLoc),
-                        new CodeInstruction(OpCodes.Stloc, lb_eq),
-                        LoadArg(pawnArgIndex),
-                        new CodeInstruction(OpCodes.Ldloc, lb_eq),
-                        new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
-                        new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
-
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainEq),
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainPos),
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_mainAngle),
-                        new CodeInstruction(OpCodes.Call, MI_PrepareMainhandDraw),
-
-                        new CodeInstruction(OpCodes.Ldloc, lb_mainEq),
-                        new CodeInstruction(OpCodes.Ldloc, lb_mainPos),
-                        new CodeInstruction(OpCodes.Ldloc, lb_mainAngle),
-                    };
-
-                    codes.InsertRange(i, injectedBefore);
-                    i += injectedBefore.Count;
-
-                    // The original call remains at codes[i]
-                    var skipLabel = il.DefineLabel();
-                    var originalNext = (i + 1 < codes.Count) ? codes[i + 1] : null;
-                    var preservedNextLabels = originalNext != null ? new List<Label>(originalNext.labels) : new List<Label>();
-                    if (originalNext != null) originalNext.labels.Clear();
-                    // AFTER call: call PrepareOffhandDraw(...) -> if true, emit second DrawEquipmentAiming call
-                    var injectedAfter = new List<CodeInstruction>
-                    {
-                        // bool PrepareOffhandDraw(pawn, eq, drawLoc, aimAngle, out offEq, out offPos, out offAngle)
-                        LoadArg(pawnArgIndex),
-                        new CodeInstruction(OpCodes.Ldloc, lb_eq),
-                        new CodeInstruction(OpCodes.Ldloc, lb_drawLoc),
-                        new CodeInstruction(OpCodes.Ldloc, lb_aimAngle),
-
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_offEq),
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_offPos),
-                        new CodeInstruction(OpCodes.Ldloca_S, lb_offAngle),
-
-                        new CodeInstruction(OpCodes.Call, MI_PrepareOffhandDraw),
-                        new CodeInstruction(OpCodes.Brfalse_S, skipLabel),
-
-                        // *** SECOND CALL PRESENT IN IL ***
-                        new CodeInstruction(OpCodes.Ldloc, lb_offEq),
-                        new CodeInstruction(OpCodes.Ldloc, lb_offPos),
-                        new CodeInstruction(OpCodes.Ldloc, lb_offAngle),
-                        new CodeInstruction(OpCodes.Call, MI_DrawEquipmentAiming),
-                    };
-                    var skipNop = new CodeInstruction(OpCodes.Nop);
-                    skipNop.labels.Add(skipLabel);
-                    foreach (var lab in preservedNextLabels) skipNop.labels.Add(lab);
-
-                    codes.InsertRange(i + 1, injectedAfter);
-                    codes.Insert(i + 1 + injectedAfter.Count, skipNop);
-                    i += injectedAfter.Count + 1;
-
-                    // If you only want to patch the first call site, uncomment:
-                    // break;
-                }
-            }
-
-            return codes;
-        }
+        
 
         private static int FindPawnArgumentIndex(MethodBase original)
         {

@@ -34,6 +34,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
     }
 
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
+    [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawEquipmentAndApparelExtras
     {
         private static readonly MethodInfo MI_DrawEquipmentAiming =
@@ -432,6 +433,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
     }
 
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawCarriedWeapon))]
+    [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawCarriedWeapon
     {
         private static readonly MethodInfo miDrawEquipmentAiming = AccessTools.Method(
@@ -471,8 +473,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 new CodeMatch(OpCodes.Ldarg_0),
                 new CodeMatch(OpCodes.Ldarg_1),
                 new CodeMatch(ci => ci.IsLdloc()),
-                new CodeMatch(OpCodes.Conv_R4),
-                new CodeMatch(ci => ci.Calls(miDrawEquipmentAiming))
+                new CodeMatch(OpCodes.Conv_R4)
                 );
 
             if (!matcher.IsValid)
@@ -527,6 +528,8 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
 
 
             matcher.Insert(injected_before);
+            while (matcher.IsValid && !matcher.Instruction.Calls(miDrawEquipmentAiming))
+                matcher.Advance();
             matcher.InsertAfter(injected_after);
 
             var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()).ToList());

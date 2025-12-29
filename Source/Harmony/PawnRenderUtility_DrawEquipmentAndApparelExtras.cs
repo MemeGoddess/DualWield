@@ -11,8 +11,6 @@ using Verse;
 
 namespace DualWield.Harmony
 {
-
-
     [HarmonyPatch(typeof(UIRoot_Entry), "Init")]
     public static class UIRoot_Entry_Init_IncompatibleModifications_Patch
     {
@@ -36,6 +34,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
     [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawEquipmentAndApparelExtras
     {
+        public static bool PatchApplied = false;
         private static readonly MethodInfo MI_DrawEquipmentAiming =
             AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming),
                 new[] { typeof(ThingWithComps), typeof(Vector3), typeof(float) });
@@ -151,8 +150,6 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 i += injectedBefore.Count;
 
                 // Optionally draw offhand, if they have one
-                
-
                 var injectedAfter = new List<CodeInstruction>
                 {
                     LoadArg(pawnArgIndex),
@@ -177,6 +174,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 i += injectedAfter.Count;
             }
 
+            PatchApplied = true;
             return codes;
         }
         public static bool PrepareOffhandDraw(

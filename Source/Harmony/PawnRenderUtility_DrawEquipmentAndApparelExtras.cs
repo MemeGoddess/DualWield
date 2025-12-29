@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using HarmonyLib;
 using UnityEngine;
 using Verse;
@@ -31,17 +33,9 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
         }
     }
 
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
     public static class PawnRenderUtility_DrawEquipmentAndApparelExtras
     {
-
-        [HarmonyTargetMethods]
-        public static IEnumerable<MethodBase> TargetMethods()
-        {
-            yield return AccessTools.Method(typeof(PawnRenderUtility),
-                nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras));
-        }
-
         private static readonly MethodInfo MI_DrawEquipmentAiming =
             AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming),
                 new[] { typeof(ThingWithComps), typeof(Vector3), typeof(float) });
@@ -76,13 +70,18 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                     typeof(float).MakeByRefType(),
                 });
 
-        [ThreadStatic] private static Pawn _ctxPawn;
+        [ThreadStatic] internal static Pawn _ctxPawn;
 
 
         public static bool Prefix(Pawn pawn, Vector3 drawPos, Rot4 facing, PawnRenderFlags flags)
         {
             _ctxPawn = pawn;
             return true;
+        }
+
+        public static void Postfix(Pawn pawn, Vector3 drawPos, Rot4 facing, PawnRenderFlags flags)
+        {
+            _ctxPawn = null;
         }
 
         public static IEnumerable<CodeInstruction> Transpiler(MethodBase __originalMethod, ILGenerator il,
@@ -122,6 +121,10 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 if (ci.opcode != OpCodes.Call || !(ci.operand is MethodInfo mi) ||
                     mi != MI_DrawEquipmentAiming) continue;
 
+                Label skipLabel = il.DefineLabel();
+                if (i + 1 < codes.Count)
+                    codes[i + 1].labels.Add(skipLabel);
+
                 // Patch draw location for Main hand
                 var injectedBefore = new List<CodeInstruction>
                 {
@@ -148,11 +151,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 i += injectedBefore.Count;
 
                 // Optionally draw offhand, if they have one
-                var skipLabel = il.DefineLabel();
-                var originalNext = (i + 1 < codes.Count) ? codes[i + 1] : null;
-                var preservedNextLabels =
-                    originalNext != null ? new List<Label>(originalNext.labels) : new List<Label>();
-                if (originalNext != null) originalNext.labels.Clear();
+                
 
                 var injectedAfter = new List<CodeInstruction>
                 {
@@ -174,13 +173,8 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                     new CodeInstruction(OpCodes.Call, MI_DrawEquipmentAiming),
                 };
 
-                var skipNop = new CodeInstruction(OpCodes.Nop);
-                skipNop.labels.Add(skipLabel);
-                foreach (var lab in preservedNextLabels) skipNop.labels.Add(lab);
-
                 codes.InsertRange(i + 1, injectedAfter);
-                codes.Insert(i + 1 + injectedAfter.Count, skipNop);
-                i += injectedAfter.Count + 1;
+                i += injectedAfter.Count;
             }
 
             return codes;
@@ -258,6 +252,9 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
             mainEq = eq;
             mainDrawPos = drawLoc;
             mainDrawAngle = aimAngle;
+
+            if (pawn == null)
+                return;
 
             var mainHandAngle = aimAngle;
             var offHandAngle = aimAngle;
@@ -431,6 +428,210 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
             if (!(eq?.TryGetComp<CompEquippable>() is CompEquippable ceq)) return false;
 
             return ceq.PrimaryVerb.IsMeleeAttack;
+        }
+    }
+
+    [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawCarriedWeapon))]
+    public static class PawnRenderUtility_DrawCarriedWeapon
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
+        {
+            //Thread.Sleep(5000);
+            var code = new List<CodeInstruction>(instructions);
+
+            var miDrawEquipmentAiming = AccessTools.Method(
+                typeof(PawnRenderUtility),
+                nameof(PawnRenderUtility.DrawEquipmentAiming),
+                new[] { typeof(Thing), typeof(Vector3), typeof(float) }
+            );
+
+            var helperType = typeof(PawnRenderUtility_DrawEquipmentAndApparelExtras);
+
+            var fiCtxPawn = AccessTools.Field(helperType, nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras._ctxPawn));
+            var miPrepareMainHand = AccessTools.Method(helperType, nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareMainHand));
+            var miPrepareOffhandDraw = AccessTools.Method(helperType, nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareOffhandDraw));
+
+            if (miDrawEquipmentAiming == null) throw new MissingMethodException("PawnRenderUtility.DrawEquipmentAiming(Thing,Vector3,float) not found.");
+            if (fiCtxPawn == null) throw new MissingFieldException(helperType.FullName, nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras._ctxPawn));
+            if (miPrepareMainHand == null) throw new MissingMethodException($"{helperType.FullName}.{nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareMainHand)} not found.");
+            if (miPrepareOffhandDraw == null) throw new MissingMethodException($"{helperType.FullName}.{nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareOffhandDraw)} not found.");
+
+            // 1) Find the local that holds "aimAngle" by locating "ldc.i4 143; stloc.*"
+            if (!TryFindLocalAssignedFromConst(code, 143, out int aimAngleLocalIndex))
+                throw new InvalidOperationException("Could not locate aimAngle local (expected pattern: ldc.i4(.s) 143; stloc.*).");
+
+
+            if (aimAngleLocalIndex < 0)
+                throw new InvalidOperationException("Could not locate aimAngle local (expected pattern: ldc.i4 143; stloc.*).");
+
+            // 2) Add locals we need for the transformed logic
+            // main: ThingWithComps mainEq; Vector3 mainDrawPos; float mainDrawAngle;
+            // off:  Thing offEq; Vector3 offDrawPos; float offDrawAngle;
+            var mainEqLocal = il.DeclareLocal(typeof(ThingWithComps));
+            var mainDrawPosLocal = il.DeclareLocal(typeof(Vector3));
+            var mainDrawAngleLocal = il.DeclareLocal(typeof(float));
+
+            var offEqLocal = il.DeclareLocal(typeof(Thing));
+            var offDrawPosLocal = il.DeclareLocal(typeof(Vector3));
+            var offDrawAngleLocal = il.DeclareLocal(typeof(float));
+
+            // 3) Find the existing call to PawnRenderUtility.DrawEquipmentAiming and replace only
+            //    the argument setup right before it, keeping the same DrawEquipmentAiming call.
+            var matcher = new CodeMatcher(code, il);
+
+            matcher
+                .MatchEndForward(new CodeMatch(ci => ci.opcode == OpCodes.Call && ci.operand is MethodInfo mi && mi == miDrawEquipmentAiming));
+
+            if (!matcher.IsValid)
+                throw new InvalidOperationException("Could not find call to PawnRenderUtility.DrawEquipmentAiming inside DrawCarriedWeapon.");
+
+            int callPos = matcher.Pos; // position of the call instruction
+
+            // Walk backwards to find the start of the arg-setup for the *final* DrawEquipmentAiming call.
+            // We expect near the end: ldarg.0 (weapon) ... ldarg.1 (drawPos) ... ldloc aimAngle ... conv.r4 ... call DrawEquipmentAiming
+            int startPos = callPos - 1;
+            while (startPos > 0)
+            {
+                if (code[startPos].opcode == OpCodes.Ldarg_0)
+                    break;
+                startPos--;
+            }
+
+            if (startPos <= 0 || code[startPos].opcode != OpCodes.Ldarg_0)
+                throw new InvalidOperationException("Could not locate start of argument setup for DrawEquipmentAiming (expected ldarg.0 near the end).");
+
+            // Remove everything from ldarg.0 up to (but not including) the call itself.
+            // We will re-emit our own argument building and still call the same DrawEquipmentAiming.
+            var labels = code[startPos].labels;
+            int removeCount = callPos - startPos;
+            code.RemoveRange(startPos, removeCount);
+
+            // Create the branch label for skipping the offhand DrawEquipmentAiming.
+            Label skipOffhandLabel = il.DefineLabel();
+
+            // Build injected block that leaves (Thing, Vector3, float) on stack for the existing DrawEquipmentAiming call
+            var injected_before = new List<CodeInstruction>
+            {
+                // PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareMainHand(_ctxPawn, weapon, drawPos, aimAngle, out mainEq, out mainDrawPos, out mainDrawAngle);
+                new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn) { labels = labels },
+                new CodeInstruction(OpCodes.Ldarg_0), // weapon
+                new CodeInstruction(OpCodes.Ldarg_1), // drawPos (already switch-adjusted)
+                EmitLdloc(aimAngleLocalIndex), // aimAngle (int local)
+                new CodeInstruction(OpCodes.Conv_R4),
+                new CodeInstruction(OpCodes.Ldloca_S, mainEqLocal),
+                new CodeInstruction(OpCodes.Ldloca_S, mainDrawPosLocal),
+                new CodeInstruction(OpCodes.Ldloca_S, mainDrawAngleLocal),
+                new CodeInstruction(OpCodes.Call, miPrepareMainHand),
+                // PawnRenderUtility.DrawEquipmentAiming((Thing)mainEq, mainDrawPos, mainDrawAngle);
+                // (We are NOT replacing the DrawEquipmentAiming method; we keep calling it.)
+                new CodeInstruction(OpCodes.Ldloc, mainEqLocal),
+                new CodeInstruction(OpCodes.Castclass, typeof(ThingWithComps)),
+                new CodeInstruction(OpCodes.Ldloc, mainDrawPosLocal),
+                new CodeInstruction(OpCodes.Ldloc, mainDrawAngleLocal)
+            };
+
+            // NOTE: we do NOT emit the call here; we let the original call instruction remain in-place.
+
+            var injected_after = new List<CodeInstruction>
+            {
+                new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn),
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldarg_1),
+                EmitLdloc(aimAngleLocalIndex),
+                new CodeInstruction(OpCodes.Conv_R4),
+                new CodeInstruction(OpCodes.Ldloca_S, offEqLocal),
+                new CodeInstruction(OpCodes.Ldloca_S, offDrawPosLocal),
+                new CodeInstruction(OpCodes.Ldloca_S, offDrawAngleLocal),
+                new CodeInstruction(OpCodes.Call, miPrepareOffhandDraw),
+                new CodeInstruction(OpCodes.Brfalse_S, skipOffhandLabel),
+                new CodeInstruction(OpCodes.Ldloc, offEqLocal),
+                new CodeInstruction(OpCodes.Castclass, typeof(ThingWithComps)),
+                new CodeInstruction(OpCodes.Ldloc, offDrawPosLocal),
+                new CodeInstruction(OpCodes.Ldloc, offDrawAngleLocal),
+                new CodeInstruction(OpCodes.Call, miDrawEquipmentAiming)
+            };
+
+            // label: skipOffhand
+            var nop = new CodeInstruction(OpCodes.Nop);
+            nop.labels.Add(skipOffhandLabel);
+            injected_after.Add(nop);
+
+            // Insert our injected block right where the old arg-setup was removed.
+            code.InsertRange(startPos, injected_before);
+            var afterPos = startPos + 1 + injected_before.Count;
+            code.InsertRange(afterPos, injected_after);
+
+            var debug = string.Join("\n", code.Select(x => x.ToString()).ToList());
+            return code;
+        }
+
+        private static bool TryFindLocalAssignedFromConst(List<CodeInstruction> code, int value, out int localIndex)
+        {
+            localIndex = -1;
+
+            for (int i = 0; i < code.Count - 1; i++)
+            {
+                if (!IsConstInt(code[i], value)) continue;
+
+                if (TryGetStlocIndex(code[i + 1], out localIndex))
+                    return true;
+
+                // Some IL might insert a nop between const and stloc
+                if (i + 2 < code.Count && code[i + 1].opcode == OpCodes.Nop && TryGetStlocIndex(code[i + 2], out localIndex))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsConstInt(CodeInstruction ci, int v)
+        {
+            if (ci.opcode == OpCodes.Ldc_I4 && ci.operand is int iv) return iv == v;
+            if (ci.opcode == OpCodes.Ldc_I4_S && ci.operand is sbyte sb) return sb == v;
+            // Also cover the common small-int opcodes
+            if (v == 0 && ci.opcode == OpCodes.Ldc_I4_0) return true;
+            if (v == 1 && ci.opcode == OpCodes.Ldc_I4_1) return true;
+            if (v == 2 && ci.opcode == OpCodes.Ldc_I4_2) return true;
+            if (v == 3 && ci.opcode == OpCodes.Ldc_I4_3) return true;
+            if (v == 4 && ci.opcode == OpCodes.Ldc_I4_4) return true;
+            if (v == 5 && ci.opcode == OpCodes.Ldc_I4_5) return true;
+            if (v == 6 && ci.opcode == OpCodes.Ldc_I4_6) return true;
+            if (v == 7 && ci.opcode == OpCodes.Ldc_I4_7) return true;
+            if (v == 8 && ci.opcode == OpCodes.Ldc_I4_8) return true;
+            if (v == -1 && ci.opcode == OpCodes.Ldc_I4_M1) return true;
+            return false;
+        }
+
+        private static bool TryGetStlocIndex(CodeInstruction ci, out int index)
+        {
+            index = -1;
+
+            if (ci.opcode == OpCodes.Stloc_0) { index = 0; return true; }
+            if (ci.opcode == OpCodes.Stloc_1) { index = 1; return true; }
+            if (ci.opcode == OpCodes.Stloc_2) { index = 2; return true; }
+            if (ci.opcode == OpCodes.Stloc_3) { index = 3; return true; }
+
+            if (ci.opcode == OpCodes.Stloc_S && ci.operand is LocalBuilder lbS) { index = lbS.LocalIndex; return true; }
+            if (ci.opcode == OpCodes.Stloc && ci.operand is LocalBuilder lb) { index = lb.LocalIndex; return true; }
+
+            return false;
+        }
+
+        private static CodeInstruction EmitLdloc(int localIndex)
+        {
+            switch (localIndex)
+            {
+                case 0:
+                    return new CodeInstruction(OpCodes.Ldloc_0);
+                case 1:
+                    return new CodeInstruction(OpCodes.Ldloc_1);
+                case 2:
+                    return new CodeInstruction(OpCodes.Ldloc_2);
+                case 3:
+                    return new CodeInstruction(OpCodes.Ldloc_3);
+                default:
+                    return new CodeInstruction(OpCodes.Ldloc, localIndex);
+            }
         }
     }
 }

@@ -434,17 +434,14 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawCarriedWeapon))]
     public static class PawnRenderUtility_DrawCarriedWeapon
     {
+        private static readonly MethodInfo miDrawEquipmentAiming = AccessTools.Method(
+            typeof(PawnRenderUtility),
+            nameof(PawnRenderUtility.DrawEquipmentAiming),
+            new[] { typeof(Thing), typeof(Vector3), typeof(float) }
+        );
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
         {
-            //Thread.Sleep(5000);
-            var code = new List<CodeInstruction>(instructions);
-
-            var miDrawEquipmentAiming = AccessTools.Method(
-                typeof(PawnRenderUtility),
-                nameof(PawnRenderUtility.DrawEquipmentAiming),
-                new[] { typeof(Thing), typeof(Vector3), typeof(float) }
-            );
-
+            // No point copying over the patches
             var helperType = typeof(PawnRenderUtility_DrawEquipmentAndApparelExtras);
 
             var fiCtxPawn = AccessTools.Field(helperType, nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras._ctxPawn));
@@ -456,17 +453,10 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
             if (miPrepareMainHand == null) throw new MissingMethodException($"{helperType.FullName}.{nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareMainHand)} not found.");
             if (miPrepareOffhandDraw == null) throw new MissingMethodException($"{helperType.FullName}.{nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareOffhandDraw)} not found.");
 
-            // 1) Find the local that holds "aimAngle" by locating "ldc.i4 143; stloc.*"
+            var code = instructions.ToList();
             if (!TryFindLocalAssignedFromConst(code, 143, out int aimAngleLocalIndex))
                 throw new InvalidOperationException("Could not locate aimAngle local (expected pattern: ldc.i4(.s) 143; stloc.*).");
 
-
-            if (aimAngleLocalIndex < 0)
-                throw new InvalidOperationException("Could not locate aimAngle local (expected pattern: ldc.i4 143; stloc.*).");
-
-            // 2) Add locals we need for the transformed logic
-            // main: ThingWithComps mainEq; Vector3 mainDrawPos; float mainDrawAngle;
-            // off:  Thing offEq; Vector3 offDrawPos; float offDrawAngle;
             var mainEqLocal = il.DeclareLocal(typeof(ThingWithComps));
             var mainDrawPosLocal = il.DeclareLocal(typeof(Vector3));
             var mainDrawAngleLocal = il.DeclareLocal(typeof(float));
@@ -475,63 +465,42 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
             var offDrawPosLocal = il.DeclareLocal(typeof(Vector3));
             var offDrawAngleLocal = il.DeclareLocal(typeof(float));
 
-            // 3) Find the existing call to PawnRenderUtility.DrawEquipmentAiming and replace only
-            //    the argument setup right before it, keeping the same DrawEquipmentAiming call.
-            var matcher = new CodeMatcher(code, il);
 
-            matcher
-                .MatchEndForward(new CodeMatch(ci => ci.opcode == OpCodes.Call && ci.operand is MethodInfo mi && mi == miDrawEquipmentAiming));
+            var matcher = new CodeMatcher(code, il);
+            matcher.MatchStartForward(
+                new CodeMatch(OpCodes.Ldarg_0),
+                new CodeMatch(OpCodes.Ldarg_1),
+                new CodeMatch(ci => ci.IsLdloc()),
+                new CodeMatch(OpCodes.Conv_R4),
+                new CodeMatch(ci => ci.Calls(miDrawEquipmentAiming))
+                );
 
             if (!matcher.IsValid)
                 throw new InvalidOperationException("Could not find call to PawnRenderUtility.DrawEquipmentAiming inside DrawCarriedWeapon.");
 
-            int callPos = matcher.Pos; // position of the call instruction
+            var labels = matcher.Instructions().SelectMany(x => x.labels).ToList();
+            matcher.RemoveInstructions(4);
 
-            // Walk backwards to find the start of the arg-setup for the *final* DrawEquipmentAiming call.
-            // We expect near the end: ldarg.0 (weapon) ... ldarg.1 (drawPos) ... ldloc aimAngle ... conv.r4 ... call DrawEquipmentAiming
-            int startPos = callPos - 1;
-            while (startPos > 0)
-            {
-                if (code[startPos].opcode == OpCodes.Ldarg_0)
-                    break;
-                startPos--;
-            }
 
-            if (startPos <= 0 || code[startPos].opcode != OpCodes.Ldarg_0)
-                throw new InvalidOperationException("Could not locate start of argument setup for DrawEquipmentAiming (expected ldarg.0 near the end).");
-
-            // Remove everything from ldarg.0 up to (but not including) the call itself.
-            // We will re-emit our own argument building and still call the same DrawEquipmentAiming.
-            var labels = code[startPos].labels;
-            int removeCount = callPos - startPos;
-            code.RemoveRange(startPos, removeCount);
-
-            // Create the branch label for skipping the offhand DrawEquipmentAiming.
-            Label skipOffhandLabel = il.DefineLabel();
-
-            // Build injected block that leaves (Thing, Vector3, float) on stack for the existing DrawEquipmentAiming call
             var injected_before = new List<CodeInstruction>
             {
-                // PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareMainHand(_ctxPawn, weapon, drawPos, aimAngle, out mainEq, out mainDrawPos, out mainDrawAngle);
                 new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn) { labels = labels },
-                new CodeInstruction(OpCodes.Ldarg_0), // weapon
-                new CodeInstruction(OpCodes.Ldarg_1), // drawPos (already switch-adjusted)
-                EmitLdloc(aimAngleLocalIndex), // aimAngle (int local)
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldarg_1),
+                EmitLdloc(aimAngleLocalIndex),
                 new CodeInstruction(OpCodes.Conv_R4),
                 new CodeInstruction(OpCodes.Ldloca_S, mainEqLocal),
                 new CodeInstruction(OpCodes.Ldloca_S, mainDrawPosLocal),
                 new CodeInstruction(OpCodes.Ldloca_S, mainDrawAngleLocal),
                 new CodeInstruction(OpCodes.Call, miPrepareMainHand),
-                // PawnRenderUtility.DrawEquipmentAiming((Thing)mainEq, mainDrawPos, mainDrawAngle);
-                // (We are NOT replacing the DrawEquipmentAiming method; we keep calling it.)
+
                 new CodeInstruction(OpCodes.Ldloc, mainEqLocal),
                 new CodeInstruction(OpCodes.Castclass, typeof(ThingWithComps)),
                 new CodeInstruction(OpCodes.Ldloc, mainDrawPosLocal),
                 new CodeInstruction(OpCodes.Ldloc, mainDrawAngleLocal)
             };
 
-            // NOTE: we do NOT emit the call here; we let the original call instruction remain in-place.
-
+            var skipOffhandLabel = il.DefineLabel();
             var injected_after = new List<CodeInstruction>
             {
                 new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn),
@@ -551,18 +520,17 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 new CodeInstruction(OpCodes.Call, miDrawEquipmentAiming)
             };
 
-            // label: skipOffhand
+            // Skip offhand if none equipped
             var nop = new CodeInstruction(OpCodes.Nop);
             nop.labels.Add(skipOffhandLabel);
             injected_after.Add(nop);
 
-            // Insert our injected block right where the old arg-setup was removed.
-            code.InsertRange(startPos, injected_before);
-            var afterPos = startPos + 1 + injected_before.Count;
-            code.InsertRange(afterPos, injected_after);
 
-            var debug = string.Join("\n", code.Select(x => x.ToString()).ToList());
-            return code;
+            matcher.Insert(injected_before);
+            matcher.InsertAfter(injected_after);
+
+            var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()).ToList());
+            return matcher.Instructions();
         }
 
         private static bool TryFindLocalAssignedFromConst(List<CodeInstruction> code, int value, out int localIndex)
@@ -571,34 +539,13 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
 
             for (int i = 0; i < code.Count - 1; i++)
             {
-                if (!IsConstInt(code[i], value)) continue;
-
                 if (TryGetStlocIndex(code[i + 1], out localIndex))
                     return true;
 
-                // Some IL might insert a nop between const and stloc
                 if (i + 2 < code.Count && code[i + 1].opcode == OpCodes.Nop && TryGetStlocIndex(code[i + 2], out localIndex))
                     return true;
             }
 
-            return false;
-        }
-
-        private static bool IsConstInt(CodeInstruction ci, int v)
-        {
-            if (ci.opcode == OpCodes.Ldc_I4 && ci.operand is int iv) return iv == v;
-            if (ci.opcode == OpCodes.Ldc_I4_S && ci.operand is sbyte sb) return sb == v;
-            // Also cover the common small-int opcodes
-            if (v == 0 && ci.opcode == OpCodes.Ldc_I4_0) return true;
-            if (v == 1 && ci.opcode == OpCodes.Ldc_I4_1) return true;
-            if (v == 2 && ci.opcode == OpCodes.Ldc_I4_2) return true;
-            if (v == 3 && ci.opcode == OpCodes.Ldc_I4_3) return true;
-            if (v == 4 && ci.opcode == OpCodes.Ldc_I4_4) return true;
-            if (v == 5 && ci.opcode == OpCodes.Ldc_I4_5) return true;
-            if (v == 6 && ci.opcode == OpCodes.Ldc_I4_6) return true;
-            if (v == 7 && ci.opcode == OpCodes.Ldc_I4_7) return true;
-            if (v == 8 && ci.opcode == OpCodes.Ldc_I4_8) return true;
-            if (v == -1 && ci.opcode == OpCodes.Ldc_I4_M1) return true;
             return false;
         }
 

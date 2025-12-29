@@ -436,6 +436,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
     [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawCarriedWeapon
     {
+        public static bool PatchApplied = false;
         private static readonly MethodInfo miDrawEquipmentAiming = AccessTools.Method(
             typeof(PawnRenderUtility),
             nameof(PawnRenderUtility.DrawEquipmentAiming),
@@ -533,6 +534,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
             matcher.InsertAfter(injected_after);
 
             var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()).ToList());
+            PatchApplied = true;
             return matcher.Instructions();
         }
 

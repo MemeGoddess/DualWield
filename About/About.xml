@@ -23,4 +23,8 @@
    
 	<description>Pistols are boring? Not when you dual wield them like Lara Croft! This mod allows your colonists to dual wield any weapon you allow in the mod options, including weapons added by other mods. Dual wielding does come with accuracy and firing rate penalties which are affected by the shooting/melee level of the pawns.  
 	</description>	
+	<incompatibleWith>
+		<li>roolo.runandgun</li>
+		<li>roolo.runandgun.kotobike</li>
+	</incompatibleWith>
 </ModMetaData>

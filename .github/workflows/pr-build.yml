@@ -1,0 +1,19 @@
+name: Build and Commit to Main on PR Close
+
+on:
+    pull_request:
+        types: [closed]
+        branches:
+        - main
+        - master
+        paths:
+          - 'Source/**' # Include any other folders as well
+
+permissions:
+  contents: write
+
+jobs:
+  pr-closed-build:
+    uses: MemeGoddess/RimWorld-Deployment-Pipeline/.github/workflows/pr-closed.yml@beta
+    with:
+      ProjectFiles: 'Source/DualWield.csproj'

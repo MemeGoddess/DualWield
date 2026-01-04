@@ -70,8 +70,8 @@ namespace DualWield.Harmony
                 if (eq.def.IsTwoHand() && offHandEquipped)
                 {
                     DropOffHand(__instance, eq, offHand);
-                    string herHis = __instance.pawn.story.bodyType == BodyTypeDefOf.Male ? "DW_HerHis_Male".Translate() : "DW_HerHis_Female".Translate();
-                    Messages.Message("DW_Message_UnequippedOffHand".Translate(new object[] { __instance.pawn.Name.ToStringShort, herHis }), new LookTargets(__instance.pawn), MessageTypeDefOf.CautionInput);
+                    string herHis = __instance.pawn.gender == Gender.Male ? "DW_HerHis_Male".Translate() : "DW_HerHis_Female".Translate();
+                    Messages.Message("DW_Message_UnequippedOffHand".Translate(__instance.pawn.Name.ToStringShort, herHis ), new LookTargets(__instance.pawn), MessageTypeDefOf.CautionInput);
                 }
                 return true;
             }

@@ -61,7 +61,7 @@ namespace DualWield.Harmony
             matcher.RemoveInstructions(4);
 
 
-            var injected_before = new List<CodeInstruction>
+            var injectedBefore = new List<CodeInstruction>
             {
                 new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn) { labels = labels },
                 new CodeInstruction(OpCodes.Ldarg_0),
@@ -80,7 +80,7 @@ namespace DualWield.Harmony
             };
 
             var skipOffhandLabel = il.DefineLabel();
-            var injected_after = new List<CodeInstruction>
+            var injectedAfter = new List<CodeInstruction>
             {
                 new CodeInstruction(OpCodes.Ldsfld, fiCtxPawn),
                 new CodeInstruction(OpCodes.Ldarg_0),
@@ -96,21 +96,23 @@ namespace DualWield.Harmony
                 new CodeInstruction(OpCodes.Castclass, typeof(ThingWithComps)),
                 new CodeInstruction(OpCodes.Ldloc, offDrawPosLocal),
                 new CodeInstruction(OpCodes.Ldloc, offDrawAngleLocal),
-                new CodeInstruction(OpCodes.Call, miDrawEquipmentAiming)
+                new CodeInstruction(OpCodes.Call, miDrawEquipmentAiming),
+                new CodeInstruction(OpCodes.Nop)
+                {
+                    labels = new List<Label> { skipOffhandLabel }
+                }
             };
 
-            // Skip offhand if none equipped
-            var nop = new CodeInstruction(OpCodes.Nop);
-            nop.labels.Add(skipOffhandLabel);
-            injected_after.Add(nop);
-
-
-            matcher.Insert(injected_before);
+            matcher.Insert(injectedBefore);
             while (matcher.IsValid && !matcher.Instruction.Calls(miDrawEquipmentAiming))
                 matcher.Advance();
-            matcher.InsertAfter(injected_after);
+            if (matcher.IsInvalid)
+            {
+                Log.Error("Unable to patch drafted weapon drawing, this will cause offhand weapons to not appear when standing still.");
+                return code;
+            }
+            matcher.InsertAfter(injectedAfter);
 
-            var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()).ToList());
             PatchApplied = true;
             return matcher.Instructions();
         }

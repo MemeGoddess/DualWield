@@ -95,9 +95,6 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 return codes;
             }
 
-            var pawn =
-                AccessTools.Field(typeof(PawnRenderUtility_DrawEquipmentAndApparelExtras), nameof(_ctxPawn));
-
             // OG
             var lb_eq = il.DeclareLocal(typeof(ThingWithComps));
             var lb_drawLoc = il.DeclareLocal(typeof(Vector3));

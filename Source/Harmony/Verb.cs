@@ -64,19 +64,19 @@ namespace DualWield.Harmony
 
         public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker,  Stance_Cooldown stance)
         {
-            ThingWithComps offHandEquip = null;
-            CompEquippable compEquippable = null;
+            var compEquippable = false;
 
-
-            if (stance.verb.EquipmentSource != null && DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
+             
+             if (stance.verb.EquipmentSource != null && DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
             {
-                offHandEquip = stance.verb.EquipmentSource;
-                compEquippable = offHandEquip.TryGetComp<CompEquippable>();
+                var offHandEquip = stance.verb.EquipmentSource;
+                compEquippable = offHandEquip.TryGetComp<CompEquippable>() != null;
             }
-            //Check if verb is one from a offhand weapon. 
-            if (compEquippable != null && offHandEquip != stanceTracker.pawn.equipment.Primary) //TODO: check this code 
+
+            if (compEquippable)
             {
-                stanceTracker.pawn.GetStancesOffHand().SetStance(stance);
+                var offhandStanceTracker = stanceTracker.pawn.GetStancesOffHand();
+                offhandStanceTracker.SetStance(stance);
             }
             else if (stance.GetType().Name != "Stance_RunAndGun_Cooldown")
             {

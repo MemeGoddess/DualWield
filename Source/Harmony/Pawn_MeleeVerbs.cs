@@ -33,31 +33,25 @@ namespace DualWield.Harmony
     [HarmonyPatch(typeof(Pawn_MeleeVerbs),"TryMeleeAttack")]
     class Pawn_MeleeVerbs_TryMeleeAttack
     {
-        static void Postfix(Pawn_MeleeVerbs __instance, Thing target, Verb verbToUse, bool surpriseAttack, ref bool __result, ref Pawn ___pawn)
+        static bool Prefix(Pawn_MeleeVerbs __instance, Thing target, Verb verbToUse, bool surpriseAttack, ref bool __result, ref Pawn ___pawn)
         {
             if (___pawn.GetStancesOffHand() == null || ___pawn.GetStancesOffHand().curStance is Stance_Warmup_DW || ___pawn.GetStancesOffHand().curStance is Stance_Cooldown)
-            {
-                return;
-            }
+                return true;
             if (___pawn.equipment == null || !___pawn.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEquip))
-            {
-                return;
-            }
+                return true;
             if(offHandEquip == ___pawn.equipment.Primary)
-            {
-                return;
-            }
+                return true;
             if (___pawn.InMentalState)
-            {
-                return;
-            }
+                return true;
 
-            Verb verb = __instance.Pawn.TryGetMeleeVerbOffHand(target);
+            var verb = __instance.Pawn.TryGetMeleeVerbOffHand(target);
             if(verb != null)
             {
-                bool success = verb.OffhandTryStartCastOn(target);
-                __result = __result || (verb != null && success);
+                var success = verb.OffhandTryStartCastOn(target);
+                __result = __result || success;
             }
+
+            return ___pawn.stances.FullBodyBusy;
         }
     }
 }

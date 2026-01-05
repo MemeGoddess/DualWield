@@ -14,7 +14,7 @@ namespace DualWield.Harmony
 {
     [HarmonyPatch(typeof(Verb), "TryStartCastOn", new Type[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool) })]
     public class Verb_TryStartCastOn {
-        static void Postfix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
+        static bool Prefix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
         {
             if(__instance.caster is Pawn casterPawn)
             {
@@ -23,7 +23,11 @@ namespace DualWield.Harmony
                 {
                     casterPawn.TryStartOffHandAttack(castTarg, ref __result);
                 }
+
+                return !__instance.CasterPawn.stances.FullBodyBusy;
             }
+
+            return true;
         }
     }
 
@@ -73,6 +77,10 @@ namespace DualWield.Harmony
             if (compEquippable != null && offHandEquip != stanceTracker.pawn.equipment.Primary) //TODO: check this code 
             {
                 stanceTracker.pawn.GetStancesOffHand().SetStance(stance);
+            }
+            else if (stance.GetType().Name != "Stance_RunAndGun_Cooldown")
+            {
+                stanceTracker.SetStance(new Stance_Cooldown_DW(stance.ticksLeft, stance.focusTarg, stance.verb));
             }
             else if (stanceTracker.curStance.GetType().Name != "Stance_RunAndGun_Cooldown")
             {

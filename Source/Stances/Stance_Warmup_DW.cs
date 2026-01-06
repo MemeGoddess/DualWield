@@ -81,8 +81,10 @@ namespace DualWield.Stances
                 return;
 
             var pawn = pawnMethodInfo.GetValue(__instance) as Pawn;
-            var stances = pawn.GetStancesOffHand();
-            stances.CancelBusyStanceSoft();
+
+            var stances = pawn?.GetStancesOffHand();
+
+            stances?.CancelBusyStanceSoft();
         }
     }
 }

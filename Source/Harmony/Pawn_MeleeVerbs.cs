@@ -61,7 +61,7 @@ namespace DualWield.Harmony
                 __result = __result || success;
             }
 
-            return ___pawn.stances.FullBodyBusy;
+            return !___pawn.stances.FullBodyBusy;
         }
     }
 }

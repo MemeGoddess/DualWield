@@ -16,7 +16,6 @@ namespace DualWield.Harmony
     [HarmonyPriority(Priority.HigherThanNormal)]
     public class ColonistBar_AddOffhandWeapon
     {
-        private static MethodInfo JobInBar;
         static MethodInfo showWeaponsUnderPortraitMode =
             AccessTools.PropertyGetter(typeof(Prefs), nameof(Prefs.ShowWeaponsUnderPortraitMode));
         static MethodInfo drafted = AccessTools.PropertyGetter(typeof(Pawn), nameof(Pawn.Drafted));
@@ -43,15 +42,6 @@ namespace DualWield.Harmony
             drawIcon = AccessTools.Method(typeof(Widgets), nameof(Widgets.ThingIcon), new []{typeof(Rect), typeof(Thing), typeof(float), typeof(Rot4?), typeof(bool), typeof(float), typeof(bool)});
             pawn = AccessTools.Field(typeof(ColonistBar.Entry), nameof(ColonistBar.Entry.pawn));
 
-            if (AppDomain.CurrentDomain.GetAssemblies().Any(x =>
-                    x.GetName().Name.Equals("JobInBar", StringComparison.CurrentCultureIgnoreCase)))
-            {
-                JobInBar = AccessTools.Method("Patch_ColonistBar_OnGUI_OffsetEquipped:GetOffsetFor",
-                    new[] { typeof(Pawn) });
-                if (JobInBar == null) 
-                    Log.Warning("JobInBar mod was found, but could not fetch the GetOffsetFor method. Dual Wield will not be able to offset the offhand weapon when job is shown.");
-            }
-
             var matcher = new CodeMatcher(instructions);
 
             matcher.MatchStartForward(new CodeMatch(x =>
@@ -66,7 +56,7 @@ namespace DualWield.Harmony
             if (matcher.IsInvalid)
                 throw new Exception("Unable to find current pawn in Colonist bar");
 
-            var entryIndex = matcher.Instruction.Clone().operand as LocalBuilder;
+            var entryLb = matcher.Instruction.Clone().operand as LocalBuilder;
 
             matcher.End();
             matcher.MatchEndBackwards(new CodeMatch(OpCodes.Call, showWeaponsUnderPortraitMode));
@@ -108,7 +98,7 @@ namespace DualWield.Harmony
             existingSkipCode.labels.Add(skipLabel);
             var offHand = il.DeclareLocal(typeof(ThingWithComps));
 
-            matcher.InsertAfterAndAdvance(new CodeInstruction(OpCodes.Ldloca_S, entryIndex),
+            matcher.InsertAfterAndAdvance(new CodeInstruction(OpCodes.Ldloca_S, entryLb),
                 new CodeInstruction(OpCodes.Ldfld, pawn),
                 new CodeInstruction(OpCodes.Ldfld, equipment),
                 new CodeInstruction(OpCodes.Ldloca, offHand),

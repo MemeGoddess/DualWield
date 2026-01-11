@@ -69,7 +69,7 @@ namespace DualWield.Stances
     [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
     public static class Stance_Warmup_DW_Cancel
     {
-        private static FieldInfo pawnMethodInfo = AccessTools.Field(typeof(Pawn_JobTracker), "pawn");
+        private static FieldInfo pawnField = AccessTools.Field(typeof(Pawn_JobTracker), "pawn");
         public static void Postfix(Pawn_JobTracker __instance,
             JobCondition condition,
             bool releaseReservations,
@@ -80,7 +80,7 @@ namespace DualWield.Stances
             if (!cancelBusyStancesSoft)
                 return;
 
-            var pawn = pawnMethodInfo.GetValue(__instance) as Pawn;
+            var pawn = pawnField.GetValue(__instance) as Pawn;
 
             var stances = pawn?.GetStancesOffHand();
 

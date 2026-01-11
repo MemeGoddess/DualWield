@@ -36,10 +36,10 @@ namespace DualWield.Harmony
                 __instance.TryStartOffHandAttack(targ, ref __result);
             }
 
-            if (__instance.equipment == null || !(__instance.equipment?.TryGetOffHandEquipment(out var offhand) ?? false))
+            if (__instance.equipment == null || !__instance.equipment.TryGetOffHandEquipment(out var offhand))
                 return !__instance.stances.FullBodyBusy;
             
-            return offhand != __instance.equipment?.Primary 
+            return offhand != __instance.equipment.Primary 
                    && !__instance.stances.FullBodyBusy;
         }
     }

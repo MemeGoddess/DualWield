@@ -72,7 +72,7 @@ namespace DualWield
         public static bool HasMissingArmOrHand(this Pawn instance)
         {
             return instance.health.hediffSet.GetMissingPartsCommonAncestors().Any(x =>
-                x.Part.def == BodyPartDefOf.Hand || x.Part.def == BodyPartDefOf.Arm); ;
+                x.Part.def == BodyPartDefOf.Hand || x.Part.def == BodyPartDefOf.Arm);
         }
         public static Verb TryGetMeleeVerbOffHand(this Pawn instance, Thing target)
         {

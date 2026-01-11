@@ -34,7 +34,7 @@ namespace DualWield.Harmony
             if (miPrepareOffhandDraw == null) throw new MissingMethodException($"{helperType.FullName}.{nameof(PawnRenderUtility_DrawEquipmentAndApparelExtras.PrepareOffhandDraw)} not found.");
 
             var code = instructions.ToList();
-            if (!TryFindLocalAssignedFromConst(code, out int aimAngleLocalIndex))
+            if (!TryFindFirstLocalAssigned(code, out int aimAngleLocalIndex))
                 throw new InvalidOperationException("Could not locate aimAngle local (expected pattern: ldc.i4(.s) 143; stloc.*).");
 
             var mainEqLocal = il.DeclareLocal(typeof(ThingWithComps));
@@ -117,7 +117,7 @@ namespace DualWield.Harmony
             return matcher.Instructions();
         }
 
-        private static bool TryFindLocalAssignedFromConst(List<CodeInstruction> code, out int localIndex)
+        private static bool TryFindFirstLocalAssigned(List<CodeInstruction> code, out int localIndex)
         {
             localIndex = -1;
 

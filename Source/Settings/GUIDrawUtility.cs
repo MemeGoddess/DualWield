@@ -65,10 +65,10 @@ namespace DualWield.Settings
                 return false;
 
             var iconRect = new Rect(contentRect.x + iconOffset.x, contentRect.y + iconOffset.y, IconSize, IconSize);
-            MouseoverSounds.DoRegion(iconRect, SoundDefOf.Mouseover_Command);
             var save = GUI.color;
 
-            if (Mouse.IsOver(iconRect))
+            var mouseOver = Mouse.IsOver(iconRect);
+            if (mouseOver)
                 GUI.color = iconMouseOverColor;
             else if (disabled)
                 GUI.color = disabledColor;
@@ -76,13 +76,11 @@ namespace DualWield.Settings
                 GUI.color = selectedBackground;
             else
                 GUI.color = notSelectedColor;
-
+            
             GUI.DrawTexture(iconRect, TexUI.FastFillTex);
             GUI.color = save;
 
-            TooltipHandler.TipRegion(iconRect, disabled ? disabledReason : thingDef.label);
-
-            var color = GetColor(thingDef);
+            var color = GetColorCached(thingDef);
             var resolvedIcon = GenerateIcon(thingDef, color);
             GUI.color = color;
             GUI.DrawTexture(iconRect, resolvedIcon);
@@ -91,13 +89,16 @@ namespace DualWield.Settings
             
             GUI.color = Color.white;
 
-            if (Widgets.ButtonInvisible(iconRect, true))
+            if (mouseOver)
             {
-                Event.current.button = buttonID;
-                return true;
+                MouseoverSounds.DoRegion(iconRect, SoundDefOf.Mouseover_Command);
+                TooltipHandler.TipRegion(iconRect, disabled ? disabledReason : thingDef.label);
             }
 
-            return false;
+            if (!Widgets.ButtonInvisible(iconRect)) return false;
+
+            Event.current.button = buttonID;
+            return true;
 
         }
 
@@ -170,22 +171,22 @@ namespace DualWield.Settings
             {
                 setting = new Dictionary<string, Record>();
                 foreach (var kv in defaults)
-            {
+                {
                     setting.Add(kv.Key, kv.Value);
+                }
             }
-        }
 
             var iconsPerRow = (int)((wholeRect.width / 2) / (IconGap + IconSize));
-
+            
             var selectedCount = 0;
             var unselectedCount = 0;
             foreach (var kv in setting)
-        {
+            {
                 if (kv.Value.isSelected)
                     selectedCount++;
                 else
                     unselectedCount++;
-                }
+            }
 
             var highestIndex = Math.Max(selectedCount, unselectedCount);
             

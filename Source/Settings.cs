@@ -2,6 +2,7 @@
 using RimWorld;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -80,9 +81,10 @@ namespace DualWield
             GUIDrawUtility.EnsureThingDefLookup(_allWeapons);
         }
 
+        private static long lastTicks = 0;
         public void DoWindowContents(Rect rect)
         {
-
+            var stopwatch = Stopwatch.StartNew();
             if(_allWeapons == null || !_allWeapons.Any())
                 _allWeapons = GetAllWeapons();
             
@@ -106,7 +108,7 @@ namespace DualWield
             left.verticalSpacing = 5f;
 
             var leftHeight = 0f;
-            leftHeight += left.Button("DW_SettingsGroup_Drawing_Title".Translate(), ref _settingsGroupDrawing);
+            leftHeight += left.Button("DW_SettingsGroup_Drawing_Title".Translate() + $" {lastTicks}ts", ref _settingsGroupDrawing);
 
             if (_settingsGroupDrawing)
             {
@@ -218,6 +220,9 @@ namespace DualWield
             Widgets.EndScrollView();
             _maxHeight = Math.Max(leftHeight, rightHeight);
             #endregion
+
+            stopwatch.Stop();
+            lastTicks = stopwatch.ElapsedTicks;
         }
         public override void ExposeData()
         {

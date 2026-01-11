@@ -77,7 +77,7 @@ namespace DualWield.Harmony
                 {
                     command_VerbTarget.Disable("IsIncapableOfViolence".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
                 }
-                else if (!verb.CasterPawn.drafter.Drafted)
+                else if (!verb.CasterPawn.drafter?.Drafted ?? false)
                 {
                     command_VerbTarget.Disable("IsNotDrafted".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
                 }

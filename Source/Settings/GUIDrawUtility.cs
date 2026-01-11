@@ -59,7 +59,8 @@ namespace DualWield.Settings
             return thingDef.graphicData?.color ?? Color.white;
         }
 
-        private static bool DrawTileForThingDef(ThingDef thingDef, KeyValuePair<String, Record> kv, Rect contentRect, Vector2 iconOffset, int buttonID, bool disabled, string disabledReason = "")
+        private static bool DrawTileForThingDef(ThingDef thingDef, KeyValuePair<String, Record> kv, Rect contentRect,
+            Vector2 iconOffset, int buttonID, bool disabled, bool shouldDoMouseEvents = false, string disabledReason = "")
         {
             if(thingDef == null)
                 return false;
@@ -67,7 +68,7 @@ namespace DualWield.Settings
             var iconRect = new Rect(contentRect.x + iconOffset.x, contentRect.y + iconOffset.y, IconSize, IconSize);
             var save = GUI.color;
 
-            var mouseOver = Mouse.IsOver(iconRect);
+            var mouseOver = shouldDoMouseEvents && Mouse.IsOver(iconRect);
             if (mouseOver)
                 GUI.color = iconMouseOverColor;
             else if (disabled)
@@ -201,9 +202,10 @@ namespace DualWield.Settings
             rightRect.height = maxHeight;
             rightRect.position = new Vector2(rightRect.position.x + leftRect.width, rightRect.position.y);
 
+            var backgroundRect = new Rect(wholeRect.x, wholeRect.y, wholeRect.width,
+                Math.Max(leftRect.height, rightRect.height));
             if (wholeRect.height > 0)
-                DrawBackground(new Rect(wholeRect.x, wholeRect.y, wholeRect.width, Math.Max(leftRect.height, rightRect.height)),
-                    background);
+                DrawBackground(backgroundRect, background);
             else
                 return maxHeight;
 
@@ -220,6 +222,7 @@ namespace DualWield.Settings
 
             var maxRenderRow = (int)Math.Ceiling((wholeRect.height - TextMargin - BottomMargin) / (IconGap + IconSize) - 1);
             var minRenderRow = minRender > 0 ? (int)Math.Floor((minRender - TextMargin) / (IconGap + IconSize)) : 0;
+            var shouldDoMouseEvents = Mouse.IsOver(backgroundRect);
             foreach (var item in setting)
             {
                 var rect = item.Value.isSelected ? leftRect : rightRect;
@@ -245,7 +248,9 @@ namespace DualWield.Settings
                     disabled = disabledThingDefs.TryGetValue(item.Key, out var value) && value.isSelected && item.Value.isSelected;
                 }
 
-                var interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, disabled, disabledReason);
+                var interacted = DrawTileForThingDef(thingDef, item, rect,
+                    new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, disabled,
+                    shouldDoMouseEvents, disabledReason);
                 if (interacted)
                 {
                     item.Value.isSelected = !item.Value.isSelected;
@@ -276,7 +281,8 @@ namespace DualWield.Settings
             var rowEstimate = (int)Math.Ceiling(setting.Count / (float)iconsPerRow);
             var backgroundHeight = (rowEstimate * IconSize) + (rowEstimate * IconGap) + TextMargin;
 
-            DrawBackground(new Rect(rect.position, new Vector2(rect.width, backgroundHeight)), background);
+            var backgroundRect = new Rect(rect.position, new Vector2(rect.width, backgroundHeight));
+            DrawBackground(backgroundRect, background);
 
             GUI.color = Color.white;
 
@@ -288,6 +294,7 @@ namespace DualWield.Settings
             var maxRenderRow = (int)Math.Ceiling((wholeRect.height - TextMargin - BottomMargin) / (IconGap + IconSize) - 1);
             var minRenderRow = minRender > 0 ? (int)Math.Floor((minRender - TextMargin) / (IconGap + IconSize)) : 0;
             var rendered = 0;
+            var shouldDoMouseEvents = Mouse.IsOver(backgroundRect);
             foreach (var item in setting)
             {
                 rect.height = IconSize;
@@ -300,7 +307,8 @@ namespace DualWield.Settings
                 }
 
                 var thingDef = GetThingDefFast(item.Key);
-                var interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, false);
+                var interacted = DrawTileForThingDef(thingDef, item, rect,
+                    new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, false, shouldDoMouseEvents);
                 if (interacted)
                 {
                     Func<int, string> textGetter = ((int x) => "DW_Setting_CustomRotations_SetRotation".Translate(x));

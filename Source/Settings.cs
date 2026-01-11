@@ -76,6 +76,8 @@ namespace DualWield
 
             AddMissingWeaponsForTwoHandSelection(_allWeapons);
             RemoveDeprecatedRecords(_allWeapons, TwoHandSelection);
+
+            GUIDrawUtility.EnsureThingDefLookup(_allWeapons);
         }
 
         public void DoWindowContents(Rect rect)
@@ -134,11 +136,13 @@ namespace DualWield
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                
+                var rotationRect = left.GetRect(Math.Max(0, scrollRect.height + _scroll.y - leftHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(
+                    rotationRect, CustomRotations, GetRotationDefaults(_allWeapons), _allWeapons,
+                    "DW_Setting_CustomRotations_Header".Translate(),
+                    _scroll.y > leftHeight ? _scroll.y - leftHeight : 0);
 
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(left.GetRect(1), CustomRotations,
-                    GetRotationDefaults(_allWeapons), _allWeapons, "DW_Setting_CustomRotations_Header".Translate());
-                left.Gap(actualHeight + left.verticalSpacing);
+                left.Gap(actualHeight - rotationRect.height);
                 leftHeight += actualHeight;
                 leftHeight += left.verticalSpacing;
             }
@@ -177,8 +181,13 @@ namespace DualWield
 
             if (_settingsGroupSecondary)
             {
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), DualWieldSelection, GetDualWieldDefaults(_allWeapons), _allWeapons, "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), TwoHandSelection, "DW_Setting_DualWield_DisabledReason".Translate());
-                right.Gap(actualHeight + right.verticalSpacing);
+                var secondaryRect = right.GetRect(Math.Max(0, scrollRect.height + _scroll.y - rightHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(secondaryRect,
+                    DualWieldSelection, GetDualWieldDefaults(_allWeapons), _allWeapons,
+                    "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), TwoHandSelection,
+                    "DW_Setting_DualWield_DisabledReason".Translate(), _scroll.y > rightHeight ? _scroll.y - rightHeight : 0);
+
+                right.Gap(actualHeight - secondaryRect.height);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }
@@ -188,8 +197,14 @@ namespace DualWield
 
             if (_settingsGroupTwoHanded)
             {
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), TwoHandSelection, GetTwoHandDefaults(_allWeapons), _allWeapons, "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(),  DualWieldSelection, "DW_Setting_TwoHand_DisabledReason".Translate());
-                right.Gap(actualHeight + right.verticalSpacing);
+                var twoHandedRect = right.GetRect(Math.Max(0, scrollRect.height + _scroll.y - rightHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(twoHandedRect,
+                    TwoHandSelection, GetTwoHandDefaults(_allWeapons), _allWeapons,
+                    "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(), DualWieldSelection,
+                    "DW_Setting_TwoHand_DisabledReason".Translate(),
+                    _scroll.y > rightHeight ? _scroll.y - rightHeight : 0);
+
+                right.Gap(actualHeight - twoHandedRect.height);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }

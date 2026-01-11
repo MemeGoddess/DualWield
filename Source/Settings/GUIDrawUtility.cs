@@ -102,6 +102,37 @@ namespace DualWield.Settings
         }
 
         private static Dictionary<(ThingDef, Color), Texture> _textureCache = new Dictionary<(ThingDef, Color), Texture>();
+        private static Dictionary<string, ThingDef> _thingDefLookup = null;
+        private static Dictionary<ThingDef, Color> _colorCache = new Dictionary<ThingDef, Color>();
+
+        public static void EnsureThingDefLookup(List<ThingDef> allThingDefs)
+        {
+            if (_thingDefLookup != null && _thingDefLookup.Count == allThingDefs.Count) return;
+
+            _thingDefLookup = new Dictionary<string, ThingDef>(allThingDefs.Count);
+            foreach (var td in allThingDefs)
+            {
+                _thingDefLookup[td.defName] = td;
+            }
+        }
+
+        private static ThingDef GetThingDefFast(string defName)
+        {
+            if (_thingDefLookup != null && _thingDefLookup.TryGetValue(defName, out var td))
+                return td;
+            return null;
+        }
+
+        private static Color GetColorCached(ThingDef thingDef)
+        {
+            if (_colorCache.TryGetValue(thingDef, out var cachedColor))
+                return cachedColor;
+
+            var color = GetColor(thingDef);
+            _colorCache[thingDef] = color;
+            return color;
+        }
+
         private static Texture GenerateIcon(ThingDef thingDef, Color color)
         {
             Graphic g2 = null;
@@ -131,63 +162,49 @@ namespace DualWield.Settings
             return resolvedIcon;
         }
 
-        private static Color GetPixel(Texture2D tex, float x, float y)
+        public static float CustomDrawer_MatchingThingDefs_active(Rect wholeRect, Dictionary<string, Record> setting,
+            Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "", string noText = "",
+            Dictionary<string, Record> disabledThingDefs = null, string disabledReason = "", float minRender = 0)
         {
-            Color pix;
-            int x1 = (int)Mathf.Floor(x);
-            int y1 = (int)Mathf.Floor(y);
-
-            if (x1 > tex.width || x1 < 0 ||
-               y1 > tex.height || y1 < 0)
-            {
-                pix = Color.clear;
-            }
-            else
-            {
-                pix = tex.GetPixel(x1, y1);
-            }
-
-            return pix;
-        }
-
-        private static float Rot_x(float angle, float x, float y)
-        {
-            float cos = Mathf.Cos(angle / 180.0f * Mathf.PI);
-            float sin = Mathf.Sin(angle / 180.0f * Mathf.PI);
-            return (x * cos + y * (-sin));
-        }
-        private static float Rot_y(float angle, float x, float y)
-        {
-            float cos = Mathf.Cos(angle / 180.0f * Mathf.PI);
-            float sin = Mathf.Sin(angle / 180.0f * Mathf.PI);
-            return (x * sin + y * cos);
-        }
-
-        public static float CustomDrawer_MatchingThingDefs_active(Rect wholeRect, Dictionary<string, Record> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "", string noText = "", Dictionary<string, Record> disabledThingDefs = null,string disabledReason = "")
-        {
-            //TODO: refactor this mess, remove redundant and quircky things.
             if (setting == null)
             {
                 setting = new Dictionary<string, Record>();
-                foreach (KeyValuePair<string, Record> kv in defaults)
-                {
+                foreach (var kv in defaults)
+            {
                     setting.Add(kv.Key, kv.Value);
-                }
             }
-            int iconsPerRow = (int)((wholeRect.width / 2) / (IconGap + IconSize));
-            var highestIndex = setting.GroupBy(x => x.Value.isSelected).Max(y => y.Count());
+        }
+
+            var iconsPerRow = (int)((wholeRect.width / 2) / (IconGap + IconSize));
+
+            var selectedCount = 0;
+            var unselectedCount = 0;
+            foreach (var kv in setting)
+        {
+                if (kv.Value.isSelected)
+                    selectedCount++;
+                else
+                    unselectedCount++;
+                }
+
+            var highestIndex = Math.Max(selectedCount, unselectedCount);
+            
             var rows = (int)Math.Ceiling(highestIndex / (float)iconsPerRow);
             var maxHeight = (rows * IconSize) + (rows * IconGap) + TextMargin + BottomMargin;
-            Rect leftRect = new Rect(wholeRect);
+            var leftRect = new Rect(wholeRect);
             leftRect.width /= 2;
             leftRect.height = maxHeight;
             leftRect.position = new Vector2(leftRect.position.x, leftRect.position.y);
-            Rect rightRect = new Rect(wholeRect);
-            rightRect.width = rightRect.width / 2;
-            leftRect.height = maxHeight;
+            var rightRect = new Rect(wholeRect);
+            rightRect.width /= 2;
+            rightRect.height = maxHeight;
             rightRect.position = new Vector2(rightRect.position.x + leftRect.width, rightRect.position.y);
-            DrawBackground(new Rect(wholeRect.x, wholeRect.y, wholeRect.width, Math.Max(leftRect.height, rightRect.height)), background);
 
+            if (wholeRect.height > 0)
+                DrawBackground(new Rect(wholeRect.x, wholeRect.y, wholeRect.width, Math.Max(leftRect.height, rightRect.height)),
+                    background);
+            else
+                return maxHeight;
 
             GUI.color = Color.white;
 
@@ -197,61 +214,62 @@ namespace DualWield.Settings
             leftRect.position = new Vector2(leftRect.position.x, leftRect.position.y + TextMargin);
             rightRect.position = new Vector2(rightRect.position.x, rightRect.position.y + TextMargin);
 
-            bool change = false;
-            int indexLeft = 0;
-            int indexRight = 0;
-            foreach (KeyValuePair<String, Record> item in setting)
+            var indexLeft = 0;
+            var indexRight = 0;
+
+            var maxRenderRow = (int)Math.Ceiling((wholeRect.height - TextMargin - BottomMargin) / (IconGap + IconSize) - 1);
+            var minRenderRow = minRender > 0 ? (int)Math.Floor((minRender - TextMargin) / (IconGap + IconSize)) : 0;
+            foreach (var item in setting)
             {
-                Rect rect = item.Value.isSelected ? leftRect : rightRect;
-                int index = item.Value.isSelected ? indexLeft : indexRight;
+                var rect = item.Value.isSelected ? leftRect : rightRect;
+                var index = item.Value.isSelected ? indexLeft : indexRight;
                 leftRect.height = IconSize;
                 rightRect.height = IconSize;
 
                 if (item.Value.isSelected)
-                {
                     indexLeft++;
-                }
                 else
-                {
                     indexRight++;
-                }
-                int column = index % iconsPerRow;
-                int row = index / iconsPerRow;
-                ThingDef thingDef = allThingDefs.FirstOrDefault((ThingDef td) => td.defName == item.Key);
-                bool disabled = false;
+
+                var column = index % iconsPerRow;
+                var row = index / iconsPerRow;
+
+                if (row > maxRenderRow || row < minRenderRow)
+                    continue;
+
+                var thingDef = GetThingDefFast(item.Key);
+                var disabled = false;
                 if(disabledThingDefs != null)
                 {
-                    disabled = disabledThingDefs.TryGetValue(item.Key, out Record value) && value.isSelected && item.Value.isSelected;
+                    disabled = disabledThingDefs.TryGetValue(item.Key, out var value) && value.isSelected && item.Value.isSelected;
                 }
 
-                bool interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, disabled, disabledReason);
+                var interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, disabled, disabledReason);
                 if (interacted)
                 {
-                    change = true;
                     item.Value.isSelected = !item.Value.isSelected;
                 }
             }
             return maxHeight;
         }
 
-        public static float CustomDrawer_MatchingThingDefs_dialog(Rect wholeRect, Dictionary<string, Record> setting, Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "")
+        public static float CustomDrawer_MatchingThingDefs_dialog(Rect wholeRect, Dictionary<string, Record> setting,
+            Dictionary<string, Record> defaults, List<ThingDef> allThingDefs, string yesText = "", float minRender = 0)
         {
-            //TODO: refactor this mess, remove redundant and quircky things.
-
-            float rowHeight = 20f;
             if (setting == null)
             {
                 setting = new Dictionary<string, Record>();
-                foreach (KeyValuePair<string, Record> kv in defaults)
+                foreach (var kv in defaults)
                 {
                     setting.Add(kv.Key, kv.Value);
                 }
             }
-            Rect rect = new Rect(wholeRect);
+
+            var rect = new Rect(wholeRect);
             rect.width = rect.width;
             rect.height = wholeRect.height - TextMargin + BottomMargin;
             rect.position = new Vector2(rect.position.x, rect.position.y);
-            int iconsPerRow = (int)(rect.width / (IconGap + IconSize));
+            var iconsPerRow = (int)(rect.width / (IconGap + IconSize));
             var wastedWidth = rect.width - (iconsPerRow * (IconGap + IconSize));
             rect = new Rect(rect.x, rect.y, rect.width - wastedWidth, rect.height);
             var rowEstimate = (int)Math.Ceiling(setting.Count / (float)iconsPerRow);
@@ -259,36 +277,44 @@ namespace DualWield.Settings
 
             DrawBackground(new Rect(rect.position, new Vector2(rect.width, backgroundHeight)), background);
 
-
             GUI.color = Color.white;
 
             DrawLabel(yesText, rect, TextMargin);
 
             rect.position = new Vector2(rect.position.x, rect.position.y + TextMargin);
 
-            bool change = false;
-            int index = 0;
-            foreach (KeyValuePair<String, Record> item in setting)
+            var index = 0;
+            var maxRenderRow = (int)Math.Ceiling((wholeRect.height - TextMargin - BottomMargin) / (IconGap + IconSize) - 1);
+            var minRenderRow = minRender > 0 ? (int)Math.Floor((minRender - TextMargin) / (IconGap + IconSize)) : 0;
+            var rendered = 0;
+            foreach (var item in setting)
             {
                 rect.height = IconSize;
-                int column = index % iconsPerRow;
-                int row = index / iconsPerRow;
-                ThingDef thingDef = allThingDefs.FirstOrDefault((ThingDef td) => td.defName == item.Key);
-                bool interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, false);
+                var column = index % iconsPerRow;
+                var row = index / iconsPerRow;
+                if (row > maxRenderRow || row < minRenderRow)
+                {
+                    index++;
+                    continue;
+                }
+
+                var thingDef = GetThingDefFast(item.Key);
+                var interacted = DrawTileForThingDef(thingDef, item, rect, new Vector2(IconSize * column + column * IconGap, IconSize * row + row * IconGap), index, false);
                 if (interacted)
                 {
-                    change = true;
                     Func<int, string> textGetter = ((int x) => "DW_Setting_CustomRotations_SetRotation".Translate(x));
-                    Dialog_Slider window = new Dialog_Slider(textGetter, 0, 360, delegate (int value)
+                    var window = new Dialog_Slider(textGetter, 0, 360, delegate (int value)
                     {
                         item.Value.extraRotation = value;
                         item.Value.isSelected = item.Value.extraRotation > 0;
                     }, item.Value.extraRotation);
                     Find.WindowStack.Add(window);
                 }
+
+                rendered++;
                 index++;
             }
-            int rows = index/iconsPerRow + 1;
+            var rows = index/iconsPerRow + 1;
             return (rows * IconSize) + (rows * IconGap) + TextMargin;
         }
         

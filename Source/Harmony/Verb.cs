@@ -14,7 +14,7 @@ namespace DualWield.Harmony
 {
     [HarmonyPatch(typeof(Verb), "TryStartCastOn", new Type[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool) })]
     public class Verb_TryStartCastOn {
-        static void Postfix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
+        static bool Prefix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
         {
             if(__instance.caster is Pawn casterPawn)
             {
@@ -23,7 +23,11 @@ namespace DualWield.Harmony
                 {
                     casterPawn.TryStartOffHandAttack(castTarg, ref __result);
                 }
+
+                return !__instance.CasterPawn.stances.FullBodyBusy;
             }
+
+            return true;
         }
     }
 
@@ -42,11 +46,9 @@ namespace DualWield.Harmony
                 if (code[i].opcode != OpCodes.Callvirt || !(code[i].operand is MethodInfo mi) ||
                     mi != setStance) continue;
 
-                var debug = code.Skip(i - 10).Take(20).ToList();
                 code[i] = new CodeInstruction(OpCodes.Call,
                     typeof(Verb_TryCastNextBurstShot).GetMethod("SetStanceOffHand"));
                 patched = true;
-                var debugAfter = code.Skip(i - 10).Take(20).ToList();
             }
 
             if(!patched)
@@ -58,26 +60,29 @@ namespace DualWield.Harmony
             return code;
         }
 
-        public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker,  Stance_Cooldown stance)
+        public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker, Stance_Cooldown stance)
         {
-            ThingWithComps offHandEquip = null;
-            CompEquippable compEquippable = null;
+            var isOffhand = false;
 
 
-            if (stance.verb.EquipmentSource != null && DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
+            if (stance.verb.EquipmentSource != null &&
+                DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource,
+                    out var twcdata) && twcdata.isOffHand)
             {
-                offHandEquip = stance.verb.EquipmentSource;
-                compEquippable = offHandEquip.TryGetComp<CompEquippable>();
+                var offHandEquip = stance.verb.EquipmentSource;
+                isOffhand = offHandEquip.TryGetComp<CompEquippable>() != null;
             }
-            //Check if verb is one from a offhand weapon. 
-            if (compEquippable != null && offHandEquip != stanceTracker.pawn.equipment.Primary) //TODO: check this code 
+
+            if (isOffhand)
             {
-                stanceTracker.pawn.GetStancesOffHand().SetStance(stance);
+                var offhandStanceTracker = stanceTracker.pawn.GetStancesOffHand();
+                offhandStanceTracker.SetStance(stance);
+                return;
             }
-            else if (stanceTracker.curStance.GetType().Name != "Stance_RunAndGun_Cooldown")
-            {
-                stanceTracker.SetStance(stance);
-            }
+
+            stanceTracker.SetStance(stance.GetType().Name != "Stance_RunAndGun_Cooldown"
+                ? new Stance_Cooldown_DW(stance.ticksLeft, stance.focusTarg, stance.verb)
+                : stance);
         }
     }
 }

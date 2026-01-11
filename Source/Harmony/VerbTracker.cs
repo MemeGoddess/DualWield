@@ -60,8 +60,21 @@ namespace DualWield.Harmony
 
         private static Command_VerbTarget CreateDualWieldCommand(Thing ownerThing, Thing offHandThing, Verb verb)
         {
+
+            StringBuilder description = new StringBuilder();
+
+            description.Append(ownerThing.LabelCap);
+            description.Append(": ");
+            description.AppendLine(ownerThing.def.description.CapitalizeFirst());
+            description.AppendLine();
+
+            description.Append(offHandThing.LabelCap);
+            description.Append(": ");
+            description.Append(offHandThing.def.description.CapitalizeFirst());
+
+
             Command_DualWield command_VerbTarget = new Command_DualWield(offHandThing);
-            command_VerbTarget.defaultDesc = ownerThing.LabelCap + ": " + ownerThing.def.description.CapitalizeFirst();
+            command_VerbTarget.defaultDesc = description.ToString();
             command_VerbTarget.icon = ownerThing.def.uiIcon;
             command_VerbTarget.iconAngle = ownerThing.def.uiIconAngle;
             command_VerbTarget.iconOffset = ownerThing.def.uiIconOffset;
@@ -77,7 +90,7 @@ namespace DualWield.Harmony
                 {
                     command_VerbTarget.Disable("IsIncapableOfViolence".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
                 }
-                else if (!verb.CasterPawn.drafter.Drafted)
+                else if (!verb.CasterPawn.drafter?.Drafted ?? false)
                 {
                     command_VerbTarget.Disable("IsNotDrafted".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
                 }

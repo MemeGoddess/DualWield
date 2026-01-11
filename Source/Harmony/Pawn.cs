@@ -19,7 +19,7 @@ namespace DualWield.Harmony
             {
                 if (__instance.Spawned && __instance.GetStancesOffHand() is Pawn_StanceTracker stancesOffHand)
                 {
-                    stancesOffHand.StanceTrackerTick();
+                     stancesOffHand.StanceTrackerTick();
                 }
             }
         }
@@ -28,13 +28,19 @@ namespace DualWield.Harmony
     [HarmonyPatch(typeof(Pawn), "TryStartAttack")]
     class Pawn_TryStartAttack
     {
-        static void Postfix(Pawn __instance, LocalTargetInfo targ, ref bool __result)
+        static bool Prefix(Pawn __instance, LocalTargetInfo targ, ref bool __result)
         {
             //Check if it's an enemy that's attacked, and not a fire or an arguing husband
             if ((!__instance.InMentalState && !(targ.Thing is Fire)))
             {
                 __instance.TryStartOffHandAttack(targ, ref __result);
             }
+
+            if (__instance.equipment == null || !__instance.equipment.TryGetOffHandEquipment(out var offhand))
+                return !__instance.stances.FullBodyBusy;
+            
+            return offhand != __instance.equipment.Primary 
+                   && !__instance.stances.FullBodyBusy;
         }
     }
 

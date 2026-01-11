@@ -2,6 +2,7 @@
 using RimWorld;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -62,6 +63,101 @@ namespace DualWield
         private static Vector2 _scroll = Vector2.zero;
         private static float _maxHeight = 600;
 
+        private static Dictionary<string, Record> _rotationDefaults;
+        private static Dictionary<string, Record> _dualWieldDefaults;
+        private static Dictionary<string, Record> _twoHandDefaults;
+
+        private static string _drawingTitle;
+        private static string _drawingNote;
+        private static string _penaltiesTitle;
+        private static string _dualWieldTitle;
+        private static string _twoHandTitle;
+        private static string _rotationsHeader;
+        private static string _dualWieldOK;
+        private static string _dualWieldNOK;
+        private static string _dualWieldDisabled;
+        private static string _twoHandOK;
+        private static string _twoHandNOK;
+        private static string _twoHandDisabled;
+
+        private static string _settingMeleeAngleTitle;
+        private static string _settingMeleeAngleDescription;
+        private static string _settingRangedAngleTitle;
+        private static string _settingRangedAngleDescription;
+        private static string _settingMeleeXOffsetTitle;
+        private static string _settingMeleeXOffsetDescription;
+        private static string _settingRangedXOffsetTitle;
+        private static string _settingRangedXOffsetDescription;
+        private static string _settingMeleeZOffsetTitle;
+        private static string _settingMeleeZOffsetDescription;
+        private static string _settingRangedZOffsetTitle;
+        private static string _settingRangedZOffsetDescription;
+        private static string _settingMeleeMirroredTitle;
+        private static string _settingMeleeMirroredDescription;
+        private static string _settingRangedMirroredTitle;
+        private static string _settingRangedMirroredDescription;
+        private static string _settingStaticCooldownPenOffHandTitle;
+        private static string _settingStaticCooldownPenOffHandDescription;
+        private static string _settingStaticCooldownPMainHandTitle;
+        private static string _settingStaticCooldownPMainHandDescription;
+        private static string _settingStaticAccPOffHandTitle;
+        private static string _settingStaticAccPOffHandDescription;
+        private static string _settingStaticAccPMainHandTitle;
+        private static string _settingStaticAccPMainHandDescription;
+        private static string _settingDynamicCooldownPTitle;
+        private static string _settingDynamicCooldownPDescription;
+        private static string _settingDynamicAccPTitle;
+        private static string _settingDynamicAccPDescription;
+        private static string _settingNPCDualWieldChanceTitle;
+        private static string _settingNPCDualWieldChanceDescription;
+
+        private static void CacheTranslations()
+        {
+            _drawingTitle = "DW_SettingsGroup_Drawing_Title".Translate();
+            _drawingNote = "DW_Setting_Note_Drawing".Translate();
+            _penaltiesTitle = "DW_SettingsGroup_Penalties_Title".Translate();
+            _dualWieldTitle = "DW_SettingsGroup_DualWieldSelection_Title".Translate();
+            _twoHandTitle = "DW_SettingsGroup_TwoHandSelection_Title".Translate();
+            _rotationsHeader = "DW_Setting_CustomRotations_Header".Translate();
+            _dualWieldOK = "DW_Setting_DualWield_OK".Translate();
+            _dualWieldNOK = "DW_Setting_DualWield_NOK".Translate();
+            _dualWieldDisabled = "DW_Setting_DualWield_DisabledReason".Translate();
+            _twoHandOK = "DW_Setting_TwoHanded_OK".Translate();
+            _twoHandNOK = "DW_Setting_TwoHanded_NOK".Translate();
+            _twoHandDisabled = "DW_Setting_TwoHand_DisabledReason".Translate();
+
+            _settingMeleeAngleTitle = "DW_Setting_MeleeAngle_Title".Translate();
+            _settingMeleeAngleDescription = "DW_Setting_MeleeAngle_Description".Translate();
+            _settingRangedAngleTitle = "DW_Setting_RangedAngle_Title".Translate();
+            _settingRangedAngleDescription = "DW_Setting_RangedAngle_Description".Translate();
+            _settingMeleeXOffsetTitle = "DW_Setting_MeleeXOffset_Title".Translate();
+            _settingMeleeXOffsetDescription = "DW_Setting_MeleeXOffset_Description".Translate();
+            _settingRangedXOffsetTitle = "DW_Setting_RangedXOffset_Title".Translate();
+            _settingRangedXOffsetDescription = "DW_Setting_RangedXOffset_Description".Translate();
+            _settingMeleeZOffsetTitle = "DW_Setting_MeleeZOffset_Title".Translate();
+            _settingMeleeZOffsetDescription = "DW_Setting_MeleeZOffset_Description".Translate();
+            _settingRangedZOffsetTitle = "DW_Setting_RangedZOffset_Title".Translate();
+            _settingRangedZOffsetDescription = "DW_Setting_RangedZOffset_Description".Translate();
+            _settingMeleeMirroredTitle = "DW_Setting_MeleeMirrored_Title".Translate();
+            _settingMeleeMirroredDescription = "DW_Setting_MeleeMirrored_Description".Translate();
+            _settingRangedMirroredTitle = "DW_Setting_RangedMirrored_Title".Translate();
+            _settingRangedMirroredDescription = "DW_Setting_RangedMirrored_Description".Translate();
+            _settingStaticCooldownPenOffHandTitle = "DW_Setting_StaticCooldownPenOffHand_Title".Translate();
+            _settingStaticCooldownPenOffHandDescription = "DW_Setting_StaticCooldownPenOffHand_Description".Translate();
+            _settingStaticCooldownPMainHandTitle = "DW_Setting_StaticCooldownPMainHand_Title".Translate();
+            _settingStaticCooldownPMainHandDescription = "DW_Setting_StaticCooldownPMainHand_Description".Translate();
+            _settingStaticAccPOffHandTitle = "DW_Setting_StaticAccPOffHand_Title".Translate();
+            _settingStaticAccPOffHandDescription = "DW_Setting_StaticAccPOffHand_Description".Translate();
+            _settingStaticAccPMainHandTitle = "DW_Setting_StaticAccPMainHand_Title".Translate();
+            _settingStaticAccPMainHandDescription = "DW_Setting_StaticAccPMainHand_Description".Translate();
+            _settingDynamicCooldownPTitle = "DW_Setting_DynamicCooldownP_Title".Translate();
+            _settingDynamicCooldownPDescription = "DW_Setting_DynamicCooldownP_Description".Translate();
+            _settingDynamicAccPTitle = "DW_Setting_DynamicAccP_Title".Translate();
+            _settingDynamicAccPDescription = "DW_Setting_DynamicAccP_Description".Translate();
+            _settingNPCDualWieldChanceTitle = "DW_Setting_NPCDualWieldChance_Title".Translate();
+            _settingNPCDualWieldChanceDescription = "DW_Setting_NPCDualWieldChance_Description".Translate();
+        }
+
         public void Init()
         {
             _allWeapons = GetAllWeapons();
@@ -76,11 +172,20 @@ namespace DualWield
 
             AddMissingWeaponsForTwoHandSelection(_allWeapons);
             RemoveDeprecatedRecords(_allWeapons, TwoHandSelection);
+
+            GUIDrawUtility.EnsureThingDefLookup(_allWeapons);
+
+            _rotationDefaults = GetRotationDefaults(_allWeapons);
+            _dualWieldDefaults = GetDualWieldDefaults(_allWeapons);
+            _twoHandDefaults = GetTwoHandDefaults(_allWeapons);
+
+            CacheTranslations();
         }
 
+        private static long lastTicks = 0;
         public void DoWindowContents(Rect rect)
         {
-
+            var stopwatch = Stopwatch.StartNew();
             if(_allWeapons == null || !_allWeapons.Any())
                 _allWeapons = GetAllWeapons();
             
@@ -104,62 +209,64 @@ namespace DualWield
             left.verticalSpacing = 5f;
 
             var leftHeight = 0f;
-            leftHeight += left.Button("DW_SettingsGroup_Drawing_Title".Translate(), ref _settingsGroupDrawing);
+            leftHeight += left.Button(_drawingTitle + $" {lastTicks}ts", ref _settingsGroupDrawing);
 
             if (_settingsGroupDrawing)
             {
-                leftHeight += left.Label("DW_Setting_Note_Drawing".Translate()).height;
+                leftHeight += left.Label(_drawingNote).height;
                 leftHeight += left.verticalSpacing;
 
-                leftHeight += left.TextNumeric("DW_Setting_MeleeAngle_Title".Translate(), "DW_Setting_MeleeAngle_Description".Translate(), 
+                leftHeight += left.TextNumeric(_settingMeleeAngleTitle, _settingMeleeAngleDescription, 
                     ref MeleeAngle, ref _meleeAngleBuffer, max: 360f);
-                leftHeight += left.TextNumeric("DW_Setting_RangedAngle_Title".Translate(), "DW_Setting_RangedAngle_Description".Translate(), 
+                leftHeight += left.TextNumeric(_settingRangedAngleTitle, _settingRangedAngleDescription, 
                     ref RangedAngle, ref _rangedAngleBuffer, max: 360f);
 
-                leftHeight += left.TextNumeric("DW_Setting_MeleeXOffset_Title".Translate(), "DW_Setting_MeleeXOffset_Description".Translate(), 
+                leftHeight += left.TextNumeric(_settingMeleeXOffsetTitle, _settingMeleeXOffsetDescription, 
                         ref MeleeXOffset, ref _meleeXOffsetBuffer, -2f, 2f);
-                leftHeight += left.TextNumeric("DW_Setting_RangedXOffset_Title".Translate(), "DW_Setting_RangedXOffset_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingRangedXOffsetTitle, _settingRangedXOffsetDescription,
                     ref RangedXOffset, ref _rangedXOffsetBuffer, -2f, 2f);
 
-                leftHeight += left.TextNumeric("DW_Setting_MeleeZOffset_Title".Translate(), "DW_Setting_MeleeZOffset_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingMeleeZOffsetTitle, _settingMeleeZOffsetDescription,
                     ref MeleeZOffset, ref _meleeZOffsetBuffer, -2f, 2f);
-                leftHeight += left.TextNumeric("DW_Setting_RangedZOffset_Title".Translate(), "DW_Setting_RangedZOffset_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingRangedZOffsetTitle, _settingRangedZOffsetDescription,
                     ref RangedZOffset, ref _rangedZOffsetBuffer, -2f, 2f);
 
-                left.CheckboxLabeled("DW_Setting_MeleeMirrored_Title".Translate(), ref MeleeMirrored, "DW_Setting_MeleeMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
+                left.CheckboxLabeled(_settingMeleeMirroredTitle, ref MeleeMirrored, _settingMeleeMirroredDescription, labelPct:0.6f, height: Text.LineHeight);
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                left.CheckboxLabeled("DW_Setting_RangedMirrored_Title".Translate(), ref RangedMirrored, "DW_Setting_RangedMirrored_Description".Translate(), labelPct:0.6f, height: Text.LineHeight);
+                left.CheckboxLabeled(_settingRangedMirroredTitle, ref RangedMirrored, _settingRangedMirroredDescription, labelPct:0.6f, height: Text.LineHeight);
                 leftHeight += Text.LineHeight;
                 leftHeight += left.verticalSpacing;
 
-                
+                var rotationRect = left.GetRect(Math.Max(0, scrollRect.height + _scroll.y - leftHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(
+                    rotationRect, CustomRotations, _rotationDefaults, _allWeapons,
+                    _rotationsHeader,
+                    _scroll.y > leftHeight ? _scroll.y - leftHeight : 0);
 
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_dialog(left.GetRect(1), CustomRotations,
-                    GetRotationDefaults(_allWeapons), _allWeapons, "DW_Setting_CustomRotations_Header".Translate());
-                left.Gap(actualHeight + left.verticalSpacing);
+                left.Gap(actualHeight - rotationRect.height);
                 leftHeight += actualHeight;
                 leftHeight += left.verticalSpacing;
             }
 
-            leftHeight += left.Button("DW_SettingsGroup_Penalties_Title".Translate(), ref _settingsGroupPenalties);
+            leftHeight += left.Button(_penaltiesTitle, ref _settingsGroupPenalties);
             
             if (_settingsGroupPenalties)
             {
-                leftHeight += left.TextNumeric("DW_Setting_StaticCooldownPenOffHand_Title".Translate(), "DW_Setting_StaticCooldownPenOffHand_Description".Translate(), 
+                leftHeight += left.TextNumeric(_settingStaticCooldownPenOffHandTitle, _settingStaticCooldownPenOffHandDescription, 
                     ref StaticCooldownPOffHand, ref _staticCooldownPOffHandBuffer, max: 500f);
-                leftHeight += left.TextNumeric("DW_Setting_StaticCooldownPMainHand_Title".Translate(), "DW_Setting_StaticCooldownPMainHand_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingStaticCooldownPMainHandTitle, _settingStaticCooldownPMainHandDescription,
                     ref StaticCooldownPMainHand, ref _staticCooldownPMainHandBuffer, max: 500f);
 
-                leftHeight += left.TextNumeric("DW_Setting_StaticAccPOffHand_Title".Translate(), "DW_Setting_StaticAccPOffHand_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingStaticAccPOffHandTitle, _settingStaticAccPOffHandDescription,
                     ref StaticAccPOffHand, ref _staticAccPOffHandBuffer, max: 500f);
-                leftHeight += left.TextNumeric("DW_Setting_StaticAccPMainHand_Title".Translate(), "DW_Setting_StaticAccPMainHand_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingStaticAccPMainHandTitle, _settingStaticAccPMainHandDescription,
                     ref StaticAccPMainHand, ref _staticAccPMainHandBuffer, max: 500f);
 
-                leftHeight += left.TextNumeric("DW_Setting_DynamicCooldownP_Title".Translate(), "DW_Setting_DynamicCooldownP_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingDynamicCooldownPTitle, _settingDynamicCooldownPDescription,
                     ref DynamicCooldownP, ref _dynamicCooldownPBuffer, max: 100f);
-                leftHeight += left.TextNumeric("DW_Setting_DynamicAccP_Title".Translate(), "DW_Setting_DynamicAccP_Description".Translate(),
+                leftHeight += left.TextNumeric(_settingDynamicAccPTitle, _settingDynamicAccPDescription,
                     ref DynamicAccP, ref _dynamicAccPBuffer, max: 10f);
             }
 
@@ -173,29 +280,40 @@ namespace DualWield
             right.verticalSpacing = left.verticalSpacing;
             right.Begin(rightRect);
 
-            rightHeight += right.Button("DW_SettingsGroup_DualWieldSelection_Title".Translate(), ref _settingsGroupSecondary);
+            rightHeight += right.Button(_dualWieldTitle, ref _settingsGroupSecondary);
 
             if (_settingsGroupSecondary)
             {
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), DualWieldSelection, GetDualWieldDefaults(_allWeapons), _allWeapons, "DW_Setting_DualWield_OK".Translate(), "DW_Setting_DualWield_NOK".Translate(), TwoHandSelection, "DW_Setting_DualWield_DisabledReason".Translate());
-                right.Gap(actualHeight + right.verticalSpacing);
+                var secondaryRect = right.GetRect(Math.Max(0, scrollRect.height + _scroll.y - rightHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(secondaryRect,
+                    DualWieldSelection, _dualWieldDefaults, _allWeapons,
+                    _dualWieldOK, _dualWieldNOK, TwoHandSelection,
+                    _dualWieldDisabled, _scroll.y > rightHeight ? _scroll.y - rightHeight : 0);
+
+                right.Gap(actualHeight - secondaryRect.height);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }
 
-            rightHeight += right.Button("DW_SettingsGroup_TwoHandSelection_Title".Translate(),
+            rightHeight += right.Button(_twoHandTitle,
                 ref _settingsGroupTwoHanded);
 
             if (_settingsGroupTwoHanded)
             {
-                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(right.GetRect(1), TwoHandSelection, GetTwoHandDefaults(_allWeapons), _allWeapons, "DW_Setting_TwoHanded_OK".Translate(), "DW_Setting_TwoHanded_NOK".Translate(),  DualWieldSelection, "DW_Setting_TwoHand_DisabledReason".Translate());
-                right.Gap(actualHeight + right.verticalSpacing);
+                var twoHandedRect = right.GetRect(Math.Max(0, scrollRect.height + _scroll.y - rightHeight));
+                var actualHeight = GUIDrawUtility.CustomDrawer_MatchingThingDefs_active(twoHandedRect,
+                    TwoHandSelection, _twoHandDefaults, _allWeapons,
+                    _twoHandOK, _twoHandNOK, DualWieldSelection,
+                    _twoHandDisabled,
+                    _scroll.y > rightHeight ? _scroll.y - rightHeight : 0);
+
+                right.Gap(actualHeight - twoHandedRect.height);
                 rightHeight += actualHeight;
                 rightHeight += right.verticalSpacing;
             }
 
-            rightHeight += right.TextNumeric("DW_Setting_NPCDualWieldChance_Title".Translate(),
-                "DW_Setting_NPCDualWieldChance_Description".Translate(), ref NpcDualWieldChance,
+            rightHeight += right.TextNumeric(_settingNPCDualWieldChanceTitle,
+                _settingNPCDualWieldChanceDescription, ref NpcDualWieldChance,
                 ref _npcDualWieldChanceBuffer, max: 100f);
 
             right.End();
@@ -203,6 +321,9 @@ namespace DualWield
             Widgets.EndScrollView();
             _maxHeight = Math.Max(leftHeight, rightHeight);
             #endregion
+
+            stopwatch.Stop();
+            lastTicks = stopwatch.ElapsedTicks;
         }
         public override void ExposeData()
         {

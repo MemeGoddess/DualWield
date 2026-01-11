@@ -46,11 +46,9 @@ namespace DualWield.Harmony
                 if (code[i].opcode != OpCodes.Callvirt || !(code[i].operand is MethodInfo mi) ||
                     mi != setStance) continue;
 
-                var debug = code.Skip(i - 10).Take(20).ToList();
                 code[i] = new CodeInstruction(OpCodes.Call,
                     typeof(Verb_TryCastNextBurstShot).GetMethod("SetStanceOffHand"));
                 patched = true;
-                var debugAfter = code.Skip(i - 10).Take(20).ToList();
             }
 
             if(!patched)
@@ -62,30 +60,29 @@ namespace DualWield.Harmony
             return code;
         }
 
-        public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker,  Stance_Cooldown stance)
+        public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker, Stance_Cooldown stance)
         {
-            var compEquippable = false;
+            var isOffhand = false;
 
-             
-             if (stance.verb.EquipmentSource != null && DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource, out ExtendedThingWithCompsData twcdata) && twcdata.isOffHand)
+
+            if (stance.verb.EquipmentSource != null &&
+                DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource,
+                    out var twcdata) && twcdata.isOffHand)
             {
                 var offHandEquip = stance.verb.EquipmentSource;
-                compEquippable = offHandEquip.TryGetComp<CompEquippable>() != null;
+                isOffhand = offHandEquip.TryGetComp<CompEquippable>() != null;
             }
 
-            if (compEquippable)
+            if (isOffhand)
             {
                 var offhandStanceTracker = stanceTracker.pawn.GetStancesOffHand();
                 offhandStanceTracker.SetStance(stance);
+                return;
             }
-            else if (stance.GetType().Name != "Stance_RunAndGun_Cooldown")
-            {
-                stanceTracker.SetStance(new Stance_Cooldown_DW(stance.ticksLeft, stance.focusTarg, stance.verb));
-            }
-            else if (stanceTracker.curStance.GetType().Name != "Stance_RunAndGun_Cooldown")
-            {
-                stanceTracker.SetStance(stance);
-            }
+
+            stanceTracker.SetStance(stance.GetType().Name != "Stance_RunAndGun_Cooldown"
+                ? new Stance_Cooldown_DW(stance.ticksLeft, stance.focusTarg, stance.verb)
+                : stance);
         }
     }
 }

@@ -209,7 +209,11 @@ namespace DualWield
             left.verticalSpacing = 5f;
 
             var leftHeight = 0f;
+#if DEBUG
             leftHeight += left.Button(_drawingTitle + $" {lastTicks}ts", ref _settingsGroupDrawing);
+#else
+            leftHeight += left.Button(_drawingTitle, ref _settingsGroupDrawing);
+#endif
 
             if (_settingsGroupDrawing)
             {

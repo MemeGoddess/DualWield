@@ -14,11 +14,12 @@ namespace DualWield.Stances
     class Stance_Cooldown_DW : Stance_Cooldown
     {
         private const float MaxRadius = 0.5f;
-        private bool hasOffhand = false;
+        private bool shouldAllowOffHand = false;
+        private ThingWithComps offhand;
 #if DEBUG
         private static Material AimPieMaterial;
 #endif
-        public override bool StanceBusy => !hasOffhand || !(Pawn?.GetStancesOffHand().curStance is Stance_Mobile);
+        public override bool StanceBusy => !shouldAllowOffHand || !(Pawn?.GetStancesOffHand().curStance is Stance_Mobile);
 
         public Stance_Cooldown_DW()
         {
@@ -32,7 +33,17 @@ namespace DualWield.Stances
 #endif
         public Stance_Cooldown_DW(int ticks, LocalTargetInfo focusTarg, Verb verb) : base(ticks, focusTarg, verb)
         {
-            hasOffhand = verb.CasterIsPawn && verb.CasterPawn.equipment != null && verb.CasterPawn.equipment.TryGetOffHandEquipment(out _);
+            var hasOffhand = verb.CasterIsPawn && verb.CasterPawn.equipment != null && verb.CasterPawn.equipment.TryGetOffHandEquipment(out offhand);
+
+            if (!hasOffhand)
+                return;
+
+            var compOffhand = offhand.GetComp<CompEquippable>();
+            if (compOffhand == null) 
+                return;
+
+            shouldAllowOffHand = compOffhand.AllVerbs.Any(x => x.CanHitTarget(focusTarg));
+
         }
 #if DEBUG
         public override void StanceDraw()

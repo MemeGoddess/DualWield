@@ -15,7 +15,3 @@ jobs:
           # I highly recommend you have one as well
           # Only update after you've deployed to staging and confirmed it works
           workshopId: '3630049419' 
-          
-          # ex: 'Source/RimMod.csproj, ModCompat/X/X.csproj'
-          # optional, will skip building if not provided
-          ProjectFiles: 'Source/DualWield.csproj' 

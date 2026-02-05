@@ -23,6 +23,15 @@ namespace DualWield.Harmony
                 }
             }
         }
+
+        static void Prefix(Pawn __instance)
+        {
+            if (__instance.stances.curStance != null) 
+                return;
+
+            Log.Warning($"Caught {__instance.LabelShort} having a null stance while ticking");
+            __instance.stances.SetStance(new Stance_Mobile());
+        }
     }
     //Also try start off hand weapons attack when trystartattack is called
     [HarmonyPatch(typeof(Pawn), "TryStartAttack")]

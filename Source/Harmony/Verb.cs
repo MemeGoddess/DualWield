@@ -24,6 +24,12 @@ namespace DualWield.Harmony
                     casterPawn.TryStartOffHandAttack(castTarg, ref __result);
                 }
 
+                if (__instance.CasterPawn.stances.curStance == null)
+                {
+                    Log.Warning($"Caught {casterPawn.LabelShort} having a null stance while attacking");
+                    __instance.CasterPawn.stances.SetStance(new Stance_Mobile());
+                }
+
                 return !__instance.CasterPawn.stances.FullBodyBusy;
             }
 

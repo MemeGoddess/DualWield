@@ -22,5 +22,14 @@ namespace DualWield.Harmony
             }
         }
 
+        static void Prefix(PawnRenderer __instance, ref Pawn ___pawn)
+        {
+            if (___pawn.stances.curStance != null) 
+                return;
+
+            Log.Warning($"Caught {___pawn.LabelShort} having a null stance while drawing");
+            ___pawn.stances.SetStance(new Stance_Mobile());
+        }
+
     }
 }

@@ -14,7 +14,7 @@ namespace DualWield.Harmony
     {
         static void Postfix(VerbProperties __instance, Thing equipment, Pawn attacker, ref float __result)
         {
-            if (attacker == null || __instance.category == VerbCategory.BeatFire) return;
+            if (attacker?.equipment == null || __instance.category == VerbCategory.BeatFire) return;
 
             if (!attacker.equipment.TryGetOffHandEquipment(out _))
                 return;

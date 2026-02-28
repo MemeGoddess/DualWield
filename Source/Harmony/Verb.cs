@@ -71,7 +71,7 @@ namespace DualWield.Harmony
             var isOffhand = false;
 
 
-            if (stance.verb.EquipmentSource != null &&
+             if (stance.verb.EquipmentSource != null &&
                 DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource,
                     out var twcdata) && twcdata.isOffHand)
             {

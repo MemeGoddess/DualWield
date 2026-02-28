@@ -6,6 +6,8 @@ using Verse;
 
 namespace DualWield
 {
+    public class OffHander : DefModExtension { }
+    public class TwoHander : DefModExtension { }
     public class DefModextension_CustomRotation : DefModExtension
     {
         public int extraRotation = 0;

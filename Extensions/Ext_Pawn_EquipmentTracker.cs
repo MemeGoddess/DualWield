@@ -15,7 +15,7 @@ namespace DualWield
         public static void AddOffHandEquipment(this Pawn_EquipmentTracker instance, ThingWithComps newEq)
         {
             ThingOwner<ThingWithComps> equipment = Traverse.Create(instance).Field("equipment").GetValue<ThingOwner<ThingWithComps>>();
-            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = ExtendedDataStorage.GetComp();
             if(store != null)
             {
                 store.GetExtendedDataFor(newEq).isOffHand = true;
@@ -33,7 +33,7 @@ namespace DualWield
             {
                 return false;
             }
-            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = ExtendedDataStorage.GetComp();
             foreach (ThingWithComps twc in instance.AllEquipmentListForReading)
             {
                 if (store.TryGetExtendedDataFor(twc, out ExtendedThingWithCompsData ext) && ext.isOffHand)

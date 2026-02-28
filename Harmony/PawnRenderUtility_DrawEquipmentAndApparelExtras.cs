@@ -1,8 +1,9 @@
-﻿using System;
+﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using HarmonyLib;
+using Tacticowl;
 using UnityEngine;
 using Verse;
 // ReSharper disable InconsistentNaming
@@ -10,6 +11,7 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(UIRoot_Entry), "Init")]
     public static class UIRoot_Entry_Init_IncompatibleModifications_Patch
     {
@@ -29,6 +31,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
         }
     }
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
     [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawEquipmentAndApparelExtras
@@ -314,12 +317,12 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
         {
             var offHandIsMelee = IsMeleeWeapon(offHandEquip);
             var mainHandIsMelee = IsMeleeWeapon(pawn.equipment.Primary);
-            var meleeAngleFlipped = DualWield.Settings.MeleeMirrored
-                ? 360 - DualWield.Settings.MeleeAngle
-                : DualWield.Settings.MeleeAngle;
-            var rangedAngleFlipped = DualWield.Settings.RangedMirrored
-                ? 360 - DualWield.Settings.RangedAngle
-                : DualWield.Settings.RangedAngle;
+            var meleeAngleFlipped = TacticowlMod.Settings.DualWield.MeleeMirrored
+                ? 360 - TacticowlMod.Settings.DualWield.MeleeAngle
+                : TacticowlMod.Settings.DualWield.MeleeAngle;
+            var rangedAngleFlipped = TacticowlMod.Settings.DualWield.RangedMirrored
+                ? 360 - TacticowlMod.Settings.DualWield.RangedAngle
+                : TacticowlMod.Settings.DualWield.RangedAngle;
 
             if (pawn.Rotation == Rot4.East)
             {
@@ -337,16 +340,16 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 if (!mainHandAiming && !offHandAiming)
                 {
                     offsetMainHand.x =
-                        mainHandIsMelee ? DualWield.Settings.MeleeXOffset : DualWield.Settings.RangedXOffset;
+                        mainHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeXOffset : TacticowlMod.Settings.DualWield.RangedXOffset;
                     offsetOffHand.x = offHandIsMelee
-                        ? -DualWield.Settings.MeleeXOffset
-                        : -DualWield.Settings.RangedXOffset;
+                        ? -TacticowlMod.Settings.DualWield.MeleeXOffset
+                        : -TacticowlMod.Settings.DualWield.RangedXOffset;
                     offsetMainHand.z =
-                        mainHandIsMelee ? DualWield.Settings.MeleeZOffset : DualWield.Settings.RangedZOffset;
+                        mainHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeZOffset : TacticowlMod.Settings.DualWield.RangedZOffset;
                     offsetOffHand.z = offHandIsMelee
-                        ? -DualWield.Settings.MeleeZOffset
-                        : -DualWield.Settings.RangedZOffset;
-                    offHandAngle = offHandIsMelee ? DualWield.Settings.MeleeAngle : DualWield.Settings.RangedAngle;
+                        ? -TacticowlMod.Settings.DualWield.MeleeZOffset
+                        : -TacticowlMod.Settings.DualWield.RangedZOffset;
+                    offHandAngle = offHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeAngle : TacticowlMod.Settings.DualWield.RangedAngle;
                     mainHandAngle = mainHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
 
                 }
@@ -361,17 +364,17 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 {
                     offsetMainHand.y = 1f;
                     offsetMainHand.x = mainHandIsMelee
-                        ? -DualWield.Settings.MeleeXOffset
-                        : -DualWield.Settings.RangedXOffset;
+                        ? -TacticowlMod.Settings.DualWield.MeleeXOffset
+                        : -TacticowlMod.Settings.DualWield.RangedXOffset;
                     offsetOffHand.x =
-                        offHandIsMelee ? DualWield.Settings.MeleeXOffset : DualWield.Settings.RangedXOffset;
+                        offHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeXOffset : TacticowlMod.Settings.DualWield.RangedXOffset;
                     offsetMainHand.z = mainHandIsMelee
-                        ? -DualWield.Settings.MeleeZOffset
-                        : -DualWield.Settings.RangedZOffset;
+                        ? -TacticowlMod.Settings.DualWield.MeleeZOffset
+                        : -TacticowlMod.Settings.DualWield.RangedZOffset;
                     offsetOffHand.z =
-                        offHandIsMelee ? DualWield.Settings.MeleeZOffset : DualWield.Settings.RangedZOffset;
+                        offHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeZOffset : TacticowlMod.Settings.DualWield.RangedZOffset;
                     offHandAngle = offHandIsMelee ? meleeAngleFlipped : rangedAngleFlipped;
-                    mainHandAngle = mainHandIsMelee ? DualWield.Settings.MeleeAngle : DualWield.Settings.RangedAngle;
+                    mainHandAngle = mainHandIsMelee ? TacticowlMod.Settings.DualWield.MeleeAngle : TacticowlMod.Settings.DualWield.RangedAngle;
                 }
                 else
                 {
@@ -381,7 +384,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
 
             if (pawn.Rotation.IsHorizontal) return;
 
-            if (DualWield.Settings.CustomRotations.TryGetValue((offHandEquip.def.defName), out var offHandValue))
+            if (TacticowlMod.Settings.DualWield.CustomRotations.TryGetValue((offHandEquip.def.defName), out var offHandValue))
             {
                 offHandAngle += pawn.Rotation == Rot4.North
                     ? offHandValue.extraRotation
@@ -389,7 +392,7 @@ Incompatible version of Run and Gun detected, please use Meme Goddess' version."
                 //offHandAngle %= 360;
             }
 
-            if (DualWield.Settings.CustomRotations.TryGetValue((eq.def.defName), out var mainHandValue))
+            if (TacticowlMod.Settings.DualWield.CustomRotations.TryGetValue((eq.def.defName), out var mainHandValue))
             {
                 mainHandAngle += pawn.Rotation == Rot4.North
                     ? -mainHandValue.extraRotation

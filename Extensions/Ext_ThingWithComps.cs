@@ -11,7 +11,7 @@ namespace DualWield
     {
         public static bool IsOffHand(this ThingWithComps instance)
         {
-            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = ExtendedDataStorage.GetComp();
             if(store != null)
             {
                 if(store.TryGetExtendedDataFor(instance, out ExtendedThingWithCompsData twcData))

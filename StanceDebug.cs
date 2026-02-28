@@ -10,6 +10,7 @@ using Verse;
 namespace DualWield
 {
 #if DEBUG
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetInspectString))]
     public class StanceDebug
     {

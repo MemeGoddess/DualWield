@@ -12,6 +12,7 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Verb), "TryStartCastOn", new Type[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(bool), typeof(bool), typeof(bool), typeof(bool) })]
     public class Verb_TryStartCastOn {
         static bool Prefix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
@@ -37,6 +38,7 @@ namespace DualWield.Harmony
         }
     }
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Verb), "TryCastNextBurstShot")]
     public class Verb_TryCastNextBurstShot
     {
@@ -72,7 +74,7 @@ namespace DualWield.Harmony
 
 
              if (stance.verb.EquipmentSource != null &&
-                DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource,
+                ExtendedDataStorage.GetComp().TryGetExtendedDataFor(stance.verb.EquipmentSource,
                     out var twcdata) && twcdata.isOffHand)
             {
                 var offHandEquip = stance.verb.EquipmentSource;

@@ -4,16 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Tacticowl;
 using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(PawnWeaponGenerator), "TryGenerateWeaponFor")]
     class PawnWeaponGenerator_TryGenerateWeaponFor
     {
         static void Postfix(Pawn pawn)
         {
-            if (pawn.RaceProps.Humanlike && Rand.Chance(((float)DualWield.Settings.NpcDualWieldChance)/100f))
+            if (pawn.RaceProps.Humanlike && Rand.Chance(((float)TacticowlMod.Settings.DualWield.NpcDualWieldChance)/100f))
             {
                 float randomInRange = pawn.kindDef.weaponMoney.RandomInRange;
                 List<ThingStuffPair> allWeaponPairs = Traverse.Create(typeof(PawnWeaponGenerator)).Field("allWeaponPairs").GetValue<List<ThingStuffPair>>();

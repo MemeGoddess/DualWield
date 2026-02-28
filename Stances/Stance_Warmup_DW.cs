@@ -66,6 +66,7 @@ namespace DualWield.Stances
         }
     }
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn_JobTracker), "CleanupCurrentJob")]
     public static class Stance_Warmup_DW_Cancel
     {

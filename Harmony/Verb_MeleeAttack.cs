@@ -9,6 +9,7 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     class Verb_MeleeAttack_TryCastShot
     {

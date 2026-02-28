@@ -7,6 +7,7 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn_RotationTracker), "UpdateRotation")]
     class Pawn_RotationTracker_UpdateRotation
     {

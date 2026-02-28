@@ -9,6 +9,7 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn_MeleeVerbs), "GetUpdatedAvailableVerbsList")]
     class Pawn_MeleeVerbs_GetUpdatedAvailableVerbsList
     {
@@ -40,6 +41,7 @@ namespace DualWield.Harmony
         }
     }
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn_MeleeVerbs),"TryMeleeAttack")]
     class Pawn_MeleeVerbs_TryMeleeAttack
     {

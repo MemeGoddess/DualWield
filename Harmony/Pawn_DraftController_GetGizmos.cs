@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Pawn_DraftController), "GetGizmos", MethodType.Enumerator)]
     public class Pawn_DraftController_GetGizmos
     {

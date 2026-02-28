@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Tacticowl;
 using Verse;
 
 namespace DualWield
@@ -10,11 +11,11 @@ namespace DualWield
     {
         public static bool CanBeOffHand(this ThingDef td)
         {
-            return td.IsWeapon && DualWield.Settings.DualWieldSelection != null && DualWield.Settings.DualWieldSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected; 
+            return td.IsWeapon && TacticowlMod.Settings.DualWield.DualWieldSelection != null && TacticowlMod.Settings.DualWield.DualWieldSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected; 
         }
         public static bool IsTwoHand(this ThingDef td)
         {
-            return td.IsWeapon && DualWield.Settings.TwoHandSelection != null && DualWield.Settings.TwoHandSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected;
+            return td.IsWeapon && TacticowlMod.Settings.DualWield.TwoHandSelection != null && TacticowlMod.Settings.DualWield.TwoHandSelection.TryGetValue(td.defName, out Settings.Record value) && value.isSelected;
         }
     }
 }

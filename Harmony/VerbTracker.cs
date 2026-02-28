@@ -12,6 +12,7 @@ using Verse;
 namespace DualWield.Harmony
 {
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(VerbTracker), "CreateVerbTargetCommand")]
     public class VerbTracker_CreateVerbTargetCommand
     {
@@ -98,6 +99,7 @@ namespace DualWield.Harmony
             return command_VerbTarget;
         }
     }
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(VerbTracker), "GetVerbsCommands")]
     class VerbTracker_GetVerbsCommands_Postfix
     {

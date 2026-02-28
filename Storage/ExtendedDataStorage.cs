@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Tacticowl.Components;
 using Verse;
 
 namespace DualWield.Storage
@@ -10,7 +11,7 @@ namespace DualWield.Storage
     /**
      * Storage used to extend existing Rimworld objects with additional data. Caution should be taken when assigning the IDs. 
      **/
-    public class ExtendedDataStorage : WorldComponent, IExposable
+    public class ExtendedDataStorage : FetchOnceWorldComponent<ExtendedDataStorage>
     {
         private Dictionary<int, IExposable> _store =
             new Dictionary<int, IExposable>();

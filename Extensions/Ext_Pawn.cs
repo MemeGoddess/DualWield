@@ -14,14 +14,14 @@ namespace DualWield
     {
         public static Pawn_StanceTracker GetStancesOffHand(this Pawn instance)
         {
-            if(DualWield.Instance.GetExtendedDataStorage() is { } store)
+            if(ExtendedDataStorage.GetComp() is { } store)
                 return store.GetExtendedDataFor(instance).stancesOffhand;
 
             return null;
         }
         public static void SetStancesOffHand(this Pawn instance, Pawn_StanceTracker stancesOffHand)
         {
-            if (DualWield.Instance.GetExtendedDataStorage() is { } store)
+            if (ExtendedDataStorage.GetComp() is { } store)
                 store.GetExtendedDataFor(instance).stancesOffhand = stancesOffHand;
         }
         public static void TryStartOffHandAttack(this Pawn __instance, LocalTargetInfo targ, ref bool __result)

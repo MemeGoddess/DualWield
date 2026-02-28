@@ -10,6 +10,7 @@ using Verse;
 namespace DualWield.Harmony
 {
 
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(Projectile), "Launch")]
     [HarmonyPatch(new Type[] { typeof(Thing), typeof(Vector3), typeof(LocalTargetInfo), typeof(LocalTargetInfo), typeof(ProjectileHitFlags), typeof(bool), typeof(Thing), typeof(ThingDef) })]
     static class Projectile_Launch
@@ -39,7 +40,7 @@ namespace DualWield.Harmony
                 xOffset = -0.1f;
             }
 
-            ExtendedThingWithCompsData twcData = DualWield.Instance.GetExtendedDataStorage().GetExtendedDataFor(twc);
+            ExtendedThingWithCompsData twcData = ExtendedDataStorage.GetComp().GetExtendedDataFor(twc);
             if (twcData.isOffHand)
             {
                 origin += new Vector3(xOffset, 0, zOffset);

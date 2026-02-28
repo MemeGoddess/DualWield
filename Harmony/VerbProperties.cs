@@ -4,10 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Tacticowl;
 using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(VerbProperties), "AdjustedCooldown")]
     [HarmonyPatch(new Type[] { typeof(Tool), typeof(Pawn), typeof(Thing) })]
     class VerbProperties_AdjustedCooldown
@@ -26,9 +28,9 @@ namespace DualWield.Harmony
                     : attacker.skills.GetSkill(SkillDefOf.Shooting)).levelInt;
 
             var staticPenalty = (equipment is ThingWithComps twc && twc.IsOffHand()
-                ? DualWield.Settings.StaticCooldownPOffHand
-                : DualWield.Settings.StaticCooldownPMainHand) / 100f;
-            var dynamicPenalty = (DualWield.Settings.DynamicCooldownP / 100f) * (20 - skillLevel);
+                ? TacticowlMod.Settings.DualWield.StaticCooldownPOffHand
+                : TacticowlMod.Settings.DualWield.StaticCooldownPMainHand) / 100f;
+            var dynamicPenalty = (TacticowlMod.Settings.DualWield.DynamicCooldownP / 100f) * (20 - skillLevel);
 
             __result *= 1.0f + staticPenalty + dynamicPenalty;
         }
@@ -53,9 +55,9 @@ namespace DualWield.Harmony
                     : pawn.skills.GetSkill(SkillDefOf.Shooting)).levelInt;
 
             var staticPenalty = (equipment is ThingWithComps twc && twc.IsOffHand()
-                ? DualWield.Settings.StaticAccPOffHand
-                : DualWield.Settings.StaticAccPMainHand) / 100f;
-            var dynamicPenalty = (DualWield.Settings.DynamicAccP / 100f) * (20 - skillLevel);
+                ? TacticowlMod.Settings.DualWield.StaticAccPOffHand
+                : TacticowlMod.Settings.DualWield.StaticAccPMainHand) / 100f;
+            var dynamicPenalty = (TacticowlMod.Settings.DualWield.DynamicAccP / 100f) * (20 - skillLevel);
 
             __result *= 1.0f - staticPenalty - dynamicPenalty;
         }

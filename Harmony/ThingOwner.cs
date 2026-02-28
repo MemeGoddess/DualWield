@@ -8,12 +8,13 @@ using Verse;
 
 namespace DualWield.Harmony
 {
+    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(ThingOwner<Thing>), "Remove")]
     class ThingOwner_Remove
     {
         static void Postfix(Thing item)
         {
-            ExtendedDataStorage store = DualWield.Instance.GetExtendedDataStorage();
+            ExtendedDataStorage store = ExtendedDataStorage.GetComp();
             if (store != null && item is ThingWithComps eq && store.TryGetExtendedDataFor(eq, out ExtendedThingWithCompsData result))
             {
                 store.DeleteExtendedDataFor(eq);

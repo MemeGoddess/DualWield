@@ -12,26 +12,6 @@ using Verse;
 namespace DualWield.Harmony
 {
     [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
-    [HarmonyPatch(typeof(UIRoot_Entry), "Init")]
-    public static class UIRoot_Entry_Init_IncompatibleModifications_Patch
-    {
-        [HarmonyPostfix]
-        public static void Postfix()
-        {
-            if (AccessTools.TypeByName("Tacticowl.ModSettings_Tacticowl") != null) 
-                CreateHereticalModificationsDialog();
-        }
-
-        private static void CreateHereticalModificationsDialog()
-        {
-            const string text = @"Dual Wield - Continued
-
-Incompatible version of Run and Gun detected, please use Meme Goddess' version.";
-            Find.WindowStack.Add(new Dialog_MessageBox(text));
-        }
-    }
-
-    [HarmonyPatchCategory(nameof(Tacticowl.PatchCategories.DualWield))]
     [HarmonyPatch(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAndApparelExtras))]
     [HarmonyPriority(Priority.High)]
     public static class PawnRenderUtility_DrawEquipmentAndApparelExtras

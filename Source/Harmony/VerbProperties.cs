@@ -9,73 +9,55 @@ using Verse;
 namespace DualWield.Harmony
 {
     [HarmonyPatch(typeof(VerbProperties), "AdjustedCooldown")]
-    [HarmonyPatch(new Type[]{typeof(Tool), typeof(Pawn), typeof(Thing)})]
+    [HarmonyPatch(new Type[] { typeof(Tool), typeof(Pawn), typeof(Thing) })]
     class VerbProperties_AdjustedCooldown
     {
         static void Postfix(VerbProperties __instance, Thing equipment, Pawn attacker, ref float __result)
         {
-            if (attacker != null && attacker.skills != null && __instance.category != VerbCategory.BeatFire)
-            {
-                SkillRecord skillRecord = __instance.IsMeleeAttack ? attacker.skills.GetSkill(SkillDefOf.Melee) : attacker.skills.GetSkill(SkillDefOf.Shooting);
-                if(skillRecord == null)
-                {
-                    return;
-                }
-                if (equipment != null && equipment is ThingWithComps twc && twc.IsOffHand())
-                {
-                    __result = CalcCooldownPenalty(__result, skillRecord, DualWield.Settings.StaticCooldownPOffHand/100f);
-                }
-                else if (attacker.equipment != null && attacker.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEq))
-                {
-                    __result = CalcCooldownPenalty(__result, skillRecord, DualWield.Settings.StaticCooldownPMainHand/100f);
-                }
-            }
+            if (attacker == null || __instance.category == VerbCategory.BeatFire) return;
 
+            if (!attacker.equipment.TryGetOffHandEquipment(out _))
+                return;
 
-        }
+            var skillLevel = attacker.skills == null
+                ? 8
+                : (__instance.IsMeleeAttack
+                    ? attacker.skills.GetSkill(SkillDefOf.Melee)
+                    : attacker.skills.GetSkill(SkillDefOf.Shooting)).levelInt;
 
-        private static float CalcCooldownPenalty(float __result, SkillRecord skillRecord, float staticPenalty)
-        {
-            //TODO: make mod settings
-            float perLevelPenalty = DualWield.Settings.DynamicCooldownP/100f;
-            int levelsShort = 20 - skillRecord.levelInt;
-            float dynamicPenalty = perLevelPenalty * levelsShort;
+            var staticPenalty = (equipment is ThingWithComps twc && twc.IsOffHand()
+                ? DualWield.Settings.StaticCooldownPOffHand
+                : DualWield.Settings.StaticCooldownPMainHand) / 100f;
+            var dynamicPenalty = (DualWield.Settings.DynamicCooldownP / 100f) * (20 - skillLevel);
+
             __result *= 1.0f + staticPenalty + dynamicPenalty;
-            return __result;
         }
     }
+
     [HarmonyPatch(typeof(VerbProperties), "AdjustedAccuracy")]
     class VerbProperties_AdjustedAccuracy
     {
         static void Postfix(VerbProperties __instance, Thing equipment, ref float __result)
         {
-            if (equipment != null && equipment.ParentHolder is Pawn_EquipmentTracker peqt)
-            {
-                Pawn pawn = peqt.pawn;
-                if(pawn.skills == null)
-                {
-                    return;
-                }
-                SkillRecord skillRecord = __instance.IsMeleeAttack ? pawn.skills.GetSkill(SkillDefOf.Melee) : pawn.skills.GetSkill(SkillDefOf.Shooting);
-                if (equipment is ThingWithComps twc && twc.IsOffHand())
-                {
-                    __result = CalcAccuracyPenalty(__result, skillRecord, DualWield.Settings.StaticAccPOffHand/100f);
-                }
-                else if (pawn.equipment.TryGetOffHandEquipment(out ThingWithComps offHandEq))
-                {
-                    __result = CalcAccuracyPenalty(__result, skillRecord, DualWield.Settings.StaticAccPMainHand/100f);
-                }
-            }
-        }
+            if (!(equipment is { ParentHolder: Pawn_EquipmentTracker peqt })) return;
 
-        private static float CalcAccuracyPenalty(float __result, SkillRecord skillRecord, float staticPenalty)
-        {
-            //TODO: make mod settings
-            float perLevelPenalty = DualWield.Settings.DynamicAccP/100f;
-            int levelsShort = 20 - skillRecord.levelInt;
-            float dynamicPenalty = perLevelPenalty * levelsShort;
+            var pawn = peqt.pawn;
+
+            if (!pawn.equipment.TryGetOffHandEquipment(out _))
+                return;
+
+            var skillLevel = pawn.skills == null
+                ? 8
+                : (__instance.IsMeleeAttack
+                    ? pawn.skills.GetSkill(SkillDefOf.Melee)
+                    : pawn.skills.GetSkill(SkillDefOf.Shooting)).levelInt;
+
+            var staticPenalty = (equipment is ThingWithComps twc && twc.IsOffHand()
+                ? DualWield.Settings.StaticAccPOffHand
+                : DualWield.Settings.StaticAccPMainHand) / 100f;
+            var dynamicPenalty = (DualWield.Settings.DynamicAccP / 100f) * (20 - skillLevel);
+
             __result *= 1.0f - staticPenalty - dynamicPenalty;
-            return __result;
         }
     }
 }

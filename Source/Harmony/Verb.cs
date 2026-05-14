@@ -3,11 +3,6 @@ using DualWield.Storage;
 using HarmonyLib;
 using RimWorld;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
 using Verse;
 
 namespace DualWield.Harmony
@@ -37,58 +32,66 @@ namespace DualWield.Harmony
         }
     }
 
-    [HarmonyPatch(typeof(Verb), "TryCastNextBurstShot")]
-    public class Verb_TryCastNextBurstShot
+    [HarmonyPatch(typeof(Pawn_StanceTracker), nameof(Pawn_StanceTracker.SetStance))]
+    public static class Pawn_StanceTracker_SetStance
     {
-        [HarmonyPriority(Priority.Low)]
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        static bool Prefix(Pawn_StanceTracker __instance, ref Stance newStance)
         {
-            var code = new List<CodeInstruction>(instructions);
-            var patched = false;
-            var setStance = AccessTools.Method(typeof(Pawn_StanceTracker), nameof(Pawn_StanceTracker.SetStance));
-
-            for (int i = 0; i < code.Count; i++)
+            if (__instance?.pawn == null || !(newStance is Stance_Cooldown cooldown))
             {
-                if (code[i].opcode != OpCodes.Callvirt || !(code[i].operand is MethodInfo mi) ||
-                    mi != setStance) continue;
-
-                code[i] = new CodeInstruction(OpCodes.Call,
-                    typeof(Verb_TryCastNextBurstShot).GetMethod("SetStanceOffHand"));
-                patched = true;
+                return true;
             }
 
-            if(!patched)
+            if (ShouldRouteToOffHand(__instance, cooldown))
             {
-                Log.Error("Unable to patch SetStance for DualWield. This causes dual wielding weapons to have no cooldown. " +
-                          "It's likely that another mod is also patching this method, but I haven't been able to narrow it down yet. - Meme Goddess");
+                var offHandStanceTracker = __instance.pawn.GetStancesOffHand();
+                if (offHandStanceTracker != null && !ReferenceEquals(offHandStanceTracker, __instance))
+                {
+                    offHandStanceTracker.SetStance(cooldown);
+                    return false;
+                }
             }
 
-            return code;
+            if (ShouldWrapMainHandCooldown(__instance, cooldown))
+            {
+                if(cooldown == null)
+                    Log.Error("Cooldown null");
+                if(cooldown.ticksLeft == null)
+                    Log.Error("ticksLeft was null");
+                if (cooldown.focusTarg == null)
+                    Log.Error("focusTarg was null");
+                if(cooldown.verb == null)
+                    Log.Error("verb was null");
+                newStance = new Stance_Cooldown_DW(cooldown.ticksLeft, cooldown.focusTarg, cooldown.verb);
+            }
+
+            return true;
         }
 
-        public static void SetStanceOffHand(Pawn_StanceTracker stanceTracker, Stance_Cooldown stance)
+        private static bool ShouldRouteToOffHand(Pawn_StanceTracker stanceTracker, Stance_Cooldown stance)
         {
-            var isOffhand = false;
-
-
-            if (stance.verb.EquipmentSource != null &&
-                DualWield.Instance.GetExtendedDataStorage().TryGetExtendedDataFor(stance.verb.EquipmentSource,
-                    out var twcdata) && twcdata.isOffHand)
+            if (stanceTracker == null || stance?.verb?.EquipmentSource == null)
             {
-                var offHandEquip = stance.verb.EquipmentSource;
-                isOffhand = offHandEquip.TryGetComp<CompEquippable>() != null;
+                return false;
             }
 
-            if (isOffhand)
+            if (!(DualWield.Instance.GetExtendedDataStorage() is { } store) ||
+                !store.TryGetExtendedDataFor(stance.verb.EquipmentSource, out var twcdata) ||
+                !twcdata.isOffHand)
             {
-                var offhandStanceTracker = stanceTracker.pawn.GetStancesOffHand();
-                offhandStanceTracker.SetStance(stance);
-                return;
+                return false;
             }
 
-            stanceTracker.SetStance(stance.GetType().Name != "Stance_RunAndGun_Cooldown"
-                ? new Stance_Cooldown_DW(stance.ticksLeft, stance.focusTarg, stance.verb)
-                : stance);
+            return stance.verb.EquipmentSource.TryGetComp<CompEquippable>() != null &&
+                   ReferenceEquals(stanceTracker, stanceTracker.pawn.stances);
+        }
+
+        private static bool ShouldWrapMainHandCooldown(Pawn_StanceTracker stanceTracker, Stance_Cooldown stance)
+        {
+            return ReferenceEquals(stanceTracker, stanceTracker.pawn.stances) &&
+                   !(stance is Stance_Cooldown_DW) &&
+                   stance.GetType().Name != "Stance_RunAndGun_Cooldown" &&
+                   stance.verb != null;
         }
     }
 }

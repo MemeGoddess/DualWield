@@ -145,7 +145,7 @@ namespace DualWield.Settings
             if (thingDef.graphicData != null && thingDef.graphicData.Graphic != null)
             {
                 Graphic g = thingDef.graphicData.Graphic;
-                g2 = thingDef.graphicData.Graphic.GetColoredVersion(g.Shader, color, color);
+                g2 = thingDef.graphicData.Graphic.GetColoredVersion(g.Shader, color, Color.white);
             }
             Texture resolvedIcon;
             if (!thingDef.uiIconPath.NullOrEmpty())

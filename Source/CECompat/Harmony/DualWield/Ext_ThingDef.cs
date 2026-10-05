@@ -12,7 +12,7 @@ namespace DualWield.CECompat.Harmony
             {
                 return true;
             }
-            __result = td != null && td.weaponTags.Contains("CE_OneHandedWeapon");
+            __result = td?.weaponTags?.Contains("CE_OneHandedWeapon") ?? false;
             return false;
         }
     }
@@ -26,7 +26,7 @@ namespace DualWield.CECompat.Harmony
             {
                 return true;
             }
-            __result = td != null && !td.weaponTags.Contains("CE_OneHandedWeapon");
+            __result = !(td?.weaponTags?.Contains("CE_OneHandedWeapon") ?? false);
             return false;
         }
     }

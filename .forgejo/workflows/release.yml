@@ -1,0 +1,16 @@
+name: RimWorld Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - "main"
+      - "master"
+      - "1.7"
+      - "feat/1.7"
+
+jobs:
+  deploy:
+    uses: node/WorkshopMods/.forgejo/workflows/pipeline.yml@main
+    secrets: inherit
+    with:
+      workshopId: "3526439840"
